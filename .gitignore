@@ -1,10 +1,29 @@
-# OSX
-#
+# ─── macOS ────────────────────────────────────────────────────────────────────
 .DS_Store
+.AppleDouble
+.LSOverride
+._*
 
-# Xcode
-#
-build/
+# ─── Node ─────────────────────────────────────────────────────────────────────
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Lock files (regenerated locally)
+yarn.lock
+package-lock.json
+
+# ─── React Native / Metro ─────────────────────────────────────────────────────
+.metro-health-check*
+*.jsbundle
+/coverage
+
+# ─── iOS / Xcode ──────────────────────────────────────────────────────────────
+ios/Pods/
+ios/Podfile.lock
+ios/build/
+ios/DerivedData/
+
 *.pbxuser
 !default.pbxuser
 *.mode1v3
@@ -13,63 +32,54 @@ build/
 !default.mode2v3
 *.perspectivev3
 !default.perspectivev3
-xcuserdata
+xcuserdata/
 *.xccheckout
 *.moved-aside
-DerivedData
+*.xcuserstate
 *.hmap
 *.ipa
-*.xcuserstate
 **/.xcode.env.local
 
-# Android/IntelliJ
-#
-build/
-.idea
-.gradle
-local.properties
+# ─── Android ──────────────────────────────────────────────────────────────────
+android/build/
+android/app/build/
+android/.gradle/
+android/.kotlin/
+android/app/.cxx/
+android/local.properties
 *.iml
 *.hprof
-.cxx/
+.idea/
+
+# Keep debug keystore (needed for dev builds), ignore release
 *.keystore
-!debug.keystore
-.kotlin/
+!android/app/debug.keystore
 
-# node.js
-#
-node_modules/
-npm-debug.log
-yarn-error.log
+# ─── Ruby / Bundler ───────────────────────────────────────────────────────────
+/vendor/bundle/
+.bundle/
 
-# fastlane
-#
-# It is recommended to not store the screenshots in the git repo. Instead, use fastlane to re-generate the
-# screenshots whenever they are needed.
-# For more information about the recommended setup visit:
-# https://docs.fastlane.tools/best-practices/source-control/
-
+# ─── Fastlane ─────────────────────────────────────────────────────────────────
 **/fastlane/report.xml
 **/fastlane/Preview.html
 **/fastlane/screenshots
 **/fastlane/test_output
 
-# Bundle artifact
-*.jsbundle
-
-# Ruby / CocoaPods
-**/Pods/
-/vendor/bundle/
-
-# Temporary files created by Metro to check the health of the file watcher
-.metro-health-check*
-
-# testing
-/coverage
-
-# Yarn
+# ─── Yarn Berry ───────────────────────────────────────────────────────────────
 .yarn/*
 !.yarn/patches
 !.yarn/plugins
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+
+# ─── Env / Secrets ────────────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ─── Editor ───────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
