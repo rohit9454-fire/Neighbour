@@ -1,82 +1,201 @@
 import React from 'react';
-import { Text, View } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { BottomTabParamList, HomeStackParamList, GroupsStackParamList } from '../types';
+import {
+  BottomTabParamList,
+  HomeStackParamList,
+  GroupsStackParamList,
+  ActivitiesStackParamList,
+  ProfileStackParamList,
+} from '../types';
+
+// Screens – Home stack
 import HomeScreen from '../screens/main/HomeScreen';
-import ProfileScreen from '../screens/main/ProfileScreen';
-import GroupsScreen from '../screens/main/GroupsScreen';
 import EventDetailScreen from '../screens/main/EventDetailScreen';
 import CreateEventScreen from '../screens/main/CreateEventScreen';
+import NotificationsScreen from '../screens/main/NotificationsScreen';
+
+// Screens – Activities stack
+import ActivitiesScreen from '../screens/main/ActivitiesScreen';
+import ActivityDetailScreen from '../screens/main/ActivityDetailScreen';
+import CreateActivityScreen from '../screens/main/CreateActivityScreen';
+import MyActivitiesScreen from '../screens/main/MyActivitiesScreen';
+import ActivityChatScreen from '../screens/main/ActivityChatScreen';
+
+// Screens – Groups stack (existing)
+import GroupsScreen from '../screens/main/GroupsScreen';
 import GroupDetailScreen from '../screens/main/GroupDetailScreen';
+
+// Screens – Profile
+import ProfileScreen from '../screens/main/ProfileScreen';
 
 const Tab = createBottomTabNavigator<BottomTabParamList>();
 const HomeStack = createNativeStackNavigator<HomeStackParamList>();
+const ActivitiesStack = createNativeStackNavigator<ActivitiesStackParamList>();
 const GroupsStack = createNativeStackNavigator<GroupsStackParamList>();
+const ProfileStack = createNativeStackNavigator<ProfileStackParamList>();
 
-const STACK_HEADER_OPTIONS = {
-  headerStyle: { backgroundColor: '#4F46E5' },
-  headerTintColor: '#fff',
-  headerTitleStyle: { fontWeight: '700' as const },
-};
-
-interface TabIconProps {
-  emoji: string;
-  focused: boolean;
-}
-
-function TabIcon({ emoji, focused }: TabIconProps): React.JSX.Element {
-  return (
-    <View style={{ alignItems: 'center' }}>
-      <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.5 }}>{emoji}</Text>
-    </View>
-  );
-}
+const STACK_OPTS = { headerShown: false };
 
 function HomeStackNavigator(): React.JSX.Element {
   return (
-    <HomeStack.Navigator screenOptions={STACK_HEADER_OPTIONS}>
-      <HomeStack.Screen name="HomeMain" component={HomeScreen} options={{ headerShown: false }} />
-      <HomeStack.Screen name="EventDetail" component={EventDetailScreen} options={{ title: 'Event Details' }} />
-      <HomeStack.Screen name="CreateEvent" component={CreateEventScreen} options={{ title: 'Create Event' }} />
+    <HomeStack.Navigator screenOptions={STACK_OPTS}>
+      <HomeStack.Screen name="HomeMain" component={HomeScreen} />
+      <HomeStack.Screen name="EventDetail" component={EventDetailScreen} />
+      <HomeStack.Screen name="CreateEvent" component={CreateEventScreen} />
+      <HomeStack.Screen name="ActivityDetail" component={ActivityDetailScreen} />
+      <HomeStack.Screen name="Notifications" component={NotificationsScreen} />
     </HomeStack.Navigator>
+  );
+}
+
+function ActivitiesStackNavigator(): React.JSX.Element {
+  return (
+    <ActivitiesStack.Navigator screenOptions={STACK_OPTS}>
+      <ActivitiesStack.Screen name="ActivitiesMain" component={ActivitiesScreen} />
+      <ActivitiesStack.Screen name="ActivityDetail" component={ActivityDetailScreen} />
+      <ActivitiesStack.Screen name="CreateActivity" component={CreateActivityScreen} />
+      <ActivitiesStack.Screen name="MyActivities" component={MyActivitiesScreen} />
+      <ActivitiesStack.Screen name="ActivityChat" component={ActivityChatScreen} />
+    </ActivitiesStack.Navigator>
   );
 }
 
 function GroupsStackNavigator(): React.JSX.Element {
   return (
-    <GroupsStack.Navigator screenOptions={STACK_HEADER_OPTIONS}>
-      <GroupsStack.Screen name="GroupsMain" component={GroupsScreen} options={{ headerShown: false }} />
-      <GroupsStack.Screen name="GroupDetail" component={GroupDetailScreen} options={{ title: 'Group Details' }} />
-      <GroupsStack.Screen name="CreateGroup" component={CreateEventScreen} options={{ title: 'Create Group' }} />
+    <GroupsStack.Navigator screenOptions={STACK_OPTS}>
+      <GroupsStack.Screen name="GroupsMain" component={GroupsScreen} />
+      <GroupsStack.Screen name="GroupDetail" component={GroupDetailScreen} />
+      <GroupsStack.Screen name="CreateGroup">
+        {() => <CreateActivityScreen navigation={undefined as any} route={undefined as any} />}
+      </GroupsStack.Screen>
     </GroupsStack.Navigator>
   );
 }
+
+function ProfileStackNavigator(): React.JSX.Element {
+  return (
+    <ProfileStack.Navigator screenOptions={STACK_OPTS}>
+      <ProfileStack.Screen name="ProfileMain" component={ProfileScreen} />
+    </ProfileStack.Navigator>
+  );
+}
+
+// Create tab — opens CreateActivity directly as a modal-style stack
+function CreateTabNavigator(): React.JSX.Element {
+  return (
+    <ActivitiesStack.Navigator screenOptions={STACK_OPTS}>
+      <ActivitiesStack.Screen name="CreateActivity" component={CreateActivityScreen} />
+      <ActivitiesStack.Screen name="ActivitiesMain" component={ActivitiesScreen} />
+      <ActivitiesStack.Screen name="ActivityDetail" component={ActivityDetailScreen} />
+      <ActivitiesStack.Screen name="MyActivities" component={MyActivitiesScreen} />
+      <ActivitiesStack.Screen name="ActivityChat" component={ActivityChatScreen} />
+    </ActivitiesStack.Navigator>
+  );
+}
+
+// Chats tab — shows activity chat list
+function ChatsTabNavigator(): React.JSX.Element {
+  return (
+    <ActivitiesStack.Navigator screenOptions={STACK_OPTS}>
+      <ActivitiesStack.Screen name="MyActivities" component={MyActivitiesScreen} />
+      <ActivitiesStack.Screen name="ActivityChat" component={ActivityChatScreen} />
+      <ActivitiesStack.Screen name="ActivityDetail" component={ActivityDetailScreen} />
+      <ActivitiesStack.Screen name="ActivitiesMain" component={ActivitiesScreen} />
+      <ActivitiesStack.Screen name="CreateActivity" component={CreateActivityScreen} />
+    </ActivitiesStack.Navigator>
+  );
+}
+
+interface TabIconProps { emoji: string; focused: boolean; badge?: number }
+
+function TabIcon({ emoji, focused, badge }: TabIconProps): React.JSX.Element {
+  return (
+    <View style={tabStyles.wrap}>
+      <Text style={[tabStyles.emoji, { opacity: focused ? 1 : 0.45 }]}>{emoji}</Text>
+      {badge != null && badge > 0 && (
+        <View style={tabStyles.badge}>
+          <Text style={tabStyles.badgeText}>{badge > 9 ? '9+' : badge}</Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+const tabStyles = StyleSheet.create({
+  wrap: { alignItems: 'center', justifyContent: 'center' },
+  emoji: { fontSize: 22 },
+  badge: { position: 'absolute', top: -4, right: -8, backgroundColor: '#EF4444', borderRadius: 8, minWidth: 16, height: 16, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 3 },
+  badgeText: { fontSize: 9, color: '#fff', fontWeight: '700' },
+});
 
 export default function AppNavigator(): React.JSX.Element {
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#4F46E5',
-        tabBarInactiveTintColor: '#9CA3AF',
-        tabBarStyle: { height: 60, paddingBottom: 8, paddingTop: 4 },
-      }}
-    >
+        tabBarActiveTintColor: '#2563EB',
+        tabBarInactiveTintColor: '#4B5563',
+        tabBarStyle: {
+          backgroundColor: '#0A0A0A',
+          borderTopColor: '#111',
+          height: 64,
+          paddingBottom: 10,
+          paddingTop: 6,
+        },
+        tabBarLabelStyle: { fontSize: 10, fontWeight: '600' },
+      }}>
       <Tab.Screen
         name="Home"
         component={HomeStackNavigator}
-        options={{ tabBarIcon: ({ focused }) => <TabIcon emoji="🏠" focused={focused} />, tabBarLabel: 'Home' }}
+        options={{
+          tabBarLabel: 'Home',
+          tabBarIcon: ({ focused }) => <TabIcon emoji="🏠" focused={focused} />,
+        }}
       />
       <Tab.Screen
-        name="Groups"
-        component={GroupsStackNavigator}
-        options={{ tabBarIcon: ({ focused }) => <TabIcon emoji="👥" focused={focused} />, tabBarLabel: 'Groups' }}
+        name="Activities"
+        component={ActivitiesStackNavigator}
+        options={{
+          tabBarLabel: 'Activities',
+          tabBarIcon: ({ focused }) => <TabIcon emoji="⚡" focused={focused} />,
+        }}
+      />
+      <Tab.Screen
+        name="Create"
+        component={CreateTabNavigator}
+        options={{
+          tabBarLabel: 'Create',
+          tabBarIcon: ({ focused }) => (
+            <View style={{
+              width: 46, height: 46, borderRadius: 23,
+              backgroundColor: focused ? '#2563EB' : '#1E3A8A',
+              justifyContent: 'center', alignItems: 'center',
+              marginBottom: 4,
+              shadowColor: '#2563EB', shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 2 },
+              elevation: 6,
+            }}>
+              <Text style={{ fontSize: 22, color: '#fff' }}>＋</Text>
+            </View>
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Chats"
+        component={ChatsTabNavigator}
+        options={{
+          tabBarLabel: 'Chats',
+          tabBarIcon: ({ focused }) => <TabIcon emoji="💬" focused={focused} />,
+        }}
       />
       <Tab.Screen
         name="Profile"
-        component={ProfileScreen}
-        options={{ tabBarIcon: ({ focused }) => <TabIcon emoji="👤" focused={focused} />, tabBarLabel: 'Profile' }}
+        component={ProfileStackNavigator}
+        options={{
+          tabBarLabel: 'Profile',
+          tabBarIcon: ({ focused }) => <TabIcon emoji="👤" focused={focused} />,
+        }}
       />
     </Tab.Navigator>
   );

@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ListRenderItemInfo } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Group, GroupsStackParamList } from '../../types';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 type Props = NativeStackScreenProps<GroupsStackParamList, 'GroupsMain'>;
 
@@ -28,7 +29,7 @@ export default function GroupsScreen({ navigation }: Props): React.JSX.Element {
   );
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Community Groups</Text>
         <TouchableOpacity style={styles.createBtn} onPress={() => navigation.navigate('CreateGroup')}>
@@ -42,7 +43,7 @@ export default function GroupsScreen({ navigation }: Props): React.JSX.Element {
         contentContainerStyle={{ padding: 12 }}
         renderItem={renderItem}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 

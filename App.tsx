@@ -2,7 +2,8 @@ import React from 'react';
 import { StatusBar } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { AuthProvider } from './src/context/AuthContext';
+import { Provider } from 'react-redux';
+import { store } from './src/store';
 import RootNavigator from './src/navigation/RootNavigator';
 
 export default function App() {
@@ -10,9 +11,9 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <StatusBar barStyle="light-content" backgroundColor="#4F46E5" />
-        <AuthProvider>
+        <Provider store={store}>
           <RootNavigator />
-        </AuthProvider>
+        </Provider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

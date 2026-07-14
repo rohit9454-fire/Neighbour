@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Image } from 'react-native';
 import LottieView from 'lottie-react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../types';
@@ -25,7 +25,8 @@ export default function SplashScreen({ navigation }: Props): React.JSX.Element {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>NeighbourConnect</Text>
+      <Image source={require('../../assets/images/logo.png')} style={styles.logo} />
+      <Text style={styles.title}>Neighbour Connect</Text>
       <Text style={styles.subtitle}>Connect · Play · Celebrate</Text>
       <LottieView
         ref={animationRef}
@@ -45,4 +46,18 @@ const styles = StyleSheet.create({
   title: { fontSize: 32, fontWeight: '800', color: '#3d22e9', letterSpacing: 1 },
   subtitle: { fontSize: 16, color: '#5170ec', marginTop: 8, marginBottom: 24 },
   lottie: { width: 350, height: 350 },
+  logo: {
+    width: 100,
+    height: 100,
+    marginBottom: 24,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 6,
+    },
+    shadowOpacity: 0.37,
+    shadowRadius: 7.49,
+
+    elevation: 12
+  }
 });

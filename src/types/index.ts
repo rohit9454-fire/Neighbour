@@ -3,9 +3,49 @@
 export interface User {
   name: string;
   email: string;
+  society?: string;
+  sector?: string;
+  interests?: string[];
 }
 
 export type EventCategory = 'Sports' | 'Culture' | 'Social' | 'Hobby' | 'Other';
+
+export type ActivityCategory =
+  | 'Sports'
+  | 'Fitness'
+  | 'Cycling'
+  | 'Study'
+  | 'Meetups'
+  | 'Pets'
+  | 'Food'
+  | 'Other';
+
+export type ActivityVisibility = 'Public' | 'Private' | 'Society Only';
+
+export type ActivityStatus = 'upcoming' | 'completed' | 'cancelled';
+
+export interface Activity {
+  id: string;
+  title: string;
+  category: ActivityCategory;
+  description: string;
+  location: string;
+  date: string;
+  time: string;
+  duration: string;
+  maxParticipants: number;
+  participants: string[];
+  host: string;
+  hostAvatar?: string;
+  image?: string;
+  emoji: string;
+  visibility: ActivityVisibility;
+  status: ActivityStatus;
+  createdAt: string;
+  weather?: string;
+  rules?: string;
+  distance?: string;
+}
 
 export interface Event {
   id: string;
@@ -30,6 +70,38 @@ export interface ProfileStat {
   value: string;
 }
 
+export interface ChatMessage {
+  id: string;
+  activityId: string;
+  senderId: string;
+  senderName: string;
+  text: string;
+  timestamp: string;
+  type: 'text' | 'system' | 'image' | 'location';
+  reactions?: Record<string, string[]>;
+  readBy?: string[];
+  delivered?: boolean;
+  pinned?: boolean;
+}
+
+export type NotificationType =
+  | 'activity_joined'
+  | 'reminder'
+  | 'activity_updated'
+  | 'chat'
+  | 'community_bulletin';
+
+export interface AppNotification {
+  id: string;
+  type: NotificationType;
+  title: string;
+  body: string;
+  timestamp: string;
+  read: boolean;
+  activityId?: string;
+  deepLink?: string;
+}
+
 // ─── Auth Context ─────────────────────────────────────────────────────────────
 
 export interface AuthContextType {
@@ -50,6 +122,16 @@ export type HomeStackParamList = {
   HomeMain: undefined;
   EventDetail: { event: Event };
   CreateEvent: undefined;
+  ActivityDetail: { activityId: string };
+  Notifications: undefined;
+};
+
+export type ActivitiesStackParamList = {
+  ActivitiesMain: undefined;
+  ActivityDetail: { activityId: string };
+  CreateActivity: undefined;
+  MyActivities: undefined;
+  ActivityChat: { activityId: string; activityTitle: string };
 };
 
 export type GroupsStackParamList = {
@@ -58,8 +140,14 @@ export type GroupsStackParamList = {
   CreateGroup: undefined;
 };
 
+export type ProfileStackParamList = {
+  ProfileMain: undefined;
+};
+
 export type BottomTabParamList = {
   Home: undefined;
-  Groups: undefined;
+  Activities: undefined;
+  Create: undefined;
+  Chats: undefined;
   Profile: undefined;
 };
