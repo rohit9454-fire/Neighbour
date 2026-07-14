@@ -1,6 +1,8 @@
 import React from 'react';
+import { Text, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { createStackNavigator } from '@react-navigation/stack';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { BottomTabParamList, HomeStackParamList, GroupsStackParamList } from '../types';
 import HomeScreen from '../screens/main/HomeScreen';
 import ProfileScreen from '../screens/main/ProfileScreen';
 import GroupsScreen from '../screens/main/GroupsScreen';
@@ -8,19 +10,32 @@ import EventDetailScreen from '../screens/main/EventDetailScreen';
 import CreateEventScreen from '../screens/main/CreateEventScreen';
 import GroupDetailScreen from '../screens/main/GroupDetailScreen';
 
-const Tab = createBottomTabNavigator();
-const HomeStack = createStackNavigator();
-const GroupsStack = createStackNavigator();
+const Tab = createBottomTabNavigator<BottomTabParamList>();
+const HomeStack = createNativeStackNavigator<HomeStackParamList>();
+const GroupsStack = createNativeStackNavigator<GroupsStackParamList>();
 
-function HomeStackNavigator() {
+const STACK_HEADER_OPTIONS = {
+  headerStyle: { backgroundColor: '#4F46E5' },
+  headerTintColor: '#fff',
+  headerTitleStyle: { fontWeight: '700' as const },
+};
+
+interface TabIconProps {
+  emoji: string;
+  focused: boolean;
+}
+
+function TabIcon({ emoji, focused }: TabIconProps): React.JSX.Element {
   return (
-    <HomeStack.Navigator
-      screenOptions={{
-        headerStyle: { backgroundColor: '#4F46E5' },
-        headerTintColor: '#fff',
-        headerTitleStyle: { fontWeight: '700' },
-      }}
-    >
+    <View style={{ alignItems: 'center' }}>
+      <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.5 }}>{emoji}</Text>
+    </View>
+  );
+}
+
+function HomeStackNavigator(): React.JSX.Element {
+  return (
+    <HomeStack.Navigator screenOptions={STACK_HEADER_OPTIONS}>
       <HomeStack.Screen name="HomeMain" component={HomeScreen} options={{ headerShown: false }} />
       <HomeStack.Screen name="EventDetail" component={EventDetailScreen} options={{ title: 'Event Details' }} />
       <HomeStack.Screen name="CreateEvent" component={CreateEventScreen} options={{ title: 'Create Event' }} />
@@ -28,15 +43,9 @@ function HomeStackNavigator() {
   );
 }
 
-function GroupsStackNavigator() {
+function GroupsStackNavigator(): React.JSX.Element {
   return (
-    <GroupsStack.Navigator
-      screenOptions={{
-        headerStyle: { backgroundColor: '#4F46E5' },
-        headerTintColor: '#fff',
-        headerTitleStyle: { fontWeight: '700' },
-      }}
-    >
+    <GroupsStack.Navigator screenOptions={STACK_HEADER_OPTIONS}>
       <GroupsStack.Screen name="GroupsMain" component={GroupsScreen} options={{ headerShown: false }} />
       <GroupsStack.Screen name="GroupDetail" component={GroupDetailScreen} options={{ title: 'Group Details' }} />
       <GroupsStack.Screen name="CreateGroup" component={CreateEventScreen} options={{ title: 'Create Group' }} />
@@ -44,22 +53,15 @@ function GroupsStackNavigator() {
   );
 }
 
-const TAB_ICONS = { Home: '🏠', Groups: '👥', Profile: '👤' };
-
-export default function AppNavigator() {
+export default function AppNavigator(): React.JSX.Element {
   return (
     <Tab.Navigator
-      screenOptions={({ route }) => ({
+      screenOptions={{
         headerShown: false,
-        tabBarIcon: () => <React.Fragment><React.Fragment /></React.Fragment>,
-        tabBarLabel: ({ focused }) => {
-          const icons = { Home: focused ? '🏠' : '🏡', Groups: focused ? '👥' : '👤', Profile: focused ? '👤' : '🙂' };
-          return null;
-        },
         tabBarActiveTintColor: '#4F46E5',
         tabBarInactiveTintColor: '#9CA3AF',
         tabBarStyle: { height: 60, paddingBottom: 8, paddingTop: 4 },
-      })}
+      }}
     >
       <Tab.Screen
         name="Home"
@@ -77,14 +79,5 @@ export default function AppNavigator() {
         options={{ tabBarIcon: ({ focused }) => <TabIcon emoji="👤" focused={focused} />, tabBarLabel: 'Profile' }}
       />
     </Tab.Navigator>
-  );
-}
-
-function TabIcon({ emoji, focused }) {
-  const { Text, View, StyleSheet } = require('react-native');
-  return (
-    <View style={{ alignItems: 'center' }}>
-      <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.5 }}>{emoji}</Text>
-    </View>
   );
 }

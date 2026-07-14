@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { GroupsStackParamList, Group } from '../../types';
 
-export default function GroupDetailScreen({ route }) {
-  const { group } = route.params;
-  const [joined, setJoined] = useState(false);
+type Props = NativeStackScreenProps<GroupsStackParamList, 'GroupDetail'>;
+
+export default function GroupDetailScreen({ route }: Props): React.JSX.Element {
+  const { group } = route.params as { group: Group };
+  const [joined, setJoined] = useState<boolean>(false);
 
   return (
     <ScrollView style={styles.container}>

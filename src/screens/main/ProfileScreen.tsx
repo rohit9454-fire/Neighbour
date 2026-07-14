@@ -1,15 +1,18 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
+import { ProfileStat } from '../../types';
 
-export default function ProfileScreen() {
+const STATS: ProfileStat[] = [
+  { label: 'Events Joined', value: '8' },
+  { label: 'Groups', value: '3' },
+  { label: 'Neighbours', value: '24' },
+];
+
+const MENU_ITEMS: string[] = ['Edit Profile', 'My Events', 'Notifications', 'Settings'];
+
+export default function ProfileScreen(): React.JSX.Element {
   const { user, logout } = useAuth();
-
-  const stats = [
-    { label: 'Events Joined', value: '8' },
-    { label: 'Groups', value: '3' },
-    { label: 'Neighbours', value: '24' },
-  ];
 
   return (
     <ScrollView style={styles.container}>
@@ -22,7 +25,7 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.statsRow}>
-        {stats.map((s) => (
+        {STATS.map((s: ProfileStat) => (
           <View key={s.label} style={styles.statBox}>
             <Text style={styles.statValue}>{s.value}</Text>
             <Text style={styles.statLabel}>{s.label}</Text>
@@ -31,7 +34,7 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.section}>
-        {['Edit Profile', 'My Events', 'Notifications', 'Settings'].map((item) => (
+        {MENU_ITEMS.map((item: string) => (
           <TouchableOpacity key={item} style={styles.menuItem}>
             <Text style={styles.menuText}>{item}</Text>
             <Text style={styles.arrow}>›</Text>

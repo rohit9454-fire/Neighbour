@@ -1,9 +1,14 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useAuth } from '../../context/AuthContext';
+import { HomeStackParamList, Event } from '../../types';
 
-export default function EventDetailScreen({ route }) {
-  const { event } = route.params;
-  const [going, setGoing] = useState(false);
+type Props = NativeStackScreenProps<HomeStackParamList, 'EventDetail'>;
+
+export default function EventDetailScreen({ route }: Props): React.JSX.Element {
+  const { event } = route.params as { event: Event };
+  const [going, setGoing] = useState<boolean>(false);
 
   return (
     <ScrollView style={styles.container}>
@@ -22,7 +27,7 @@ export default function EventDetailScreen({ route }) {
         </Text>
 
         <TouchableOpacity style={[styles.rsvpBtn, going && styles.rsvpBtnActive]} onPress={() => setGoing(!going)}>
-          <Text style={styles.rsvpText}>{going ? '✅ You\'re Going!' : 'RSVP – I\'m Going'}</Text>
+          <Text style={styles.rsvpText}>{going ? "✅ You're Going!" : "RSVP – I'm Going"}</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>

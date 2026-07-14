@@ -1,15 +1,19 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { HomeStackParamList, EventCategory } from '../../types';
 
-const CATEGORIES = ['Sports', 'Culture', 'Social', 'Hobby', 'Other'];
+type Props = NativeStackScreenProps<HomeStackParamList, 'CreateEvent'>;
 
-export default function CreateEventScreen({ navigation }) {
-  const [title, setTitle] = useState('');
-  const [date, setDate] = useState('');
-  const [location, setLocation] = useState('');
-  const [category, setCategory] = useState('Sports');
+const CATEGORIES: EventCategory[] = ['Sports', 'Culture', 'Social', 'Hobby', 'Other'];
 
-  const handleCreate = () => {
+export default function CreateEventScreen({ navigation }: Props): React.JSX.Element {
+  const [title, setTitle] = useState<string>('');
+  const [date, setDate] = useState<string>('');
+  const [location, setLocation] = useState<string>('');
+  const [category, setCategory] = useState<EventCategory>('Sports');
+
+  const handleCreate = (): void => {
     if (!title || !date || !location) return Alert.alert('Error', 'Please fill all fields');
     Alert.alert('Success', 'Event created!', [{ text: 'OK', onPress: () => navigation.goBack() }]);
   };
@@ -27,7 +31,7 @@ export default function CreateEventScreen({ navigation }) {
 
       <Text style={styles.label}>Category</Text>
       <View style={styles.chips}>
-        {CATEGORIES.map((c) => (
+        {CATEGORIES.map((c: EventCategory) => (
           <TouchableOpacity key={c} style={[styles.chip, category === c && styles.chipActive]} onPress={() => setCategory(c)}>
             <Text style={[styles.chipText, category === c && styles.chipTextActive]}>{c}</Text>
           </TouchableOpacity>

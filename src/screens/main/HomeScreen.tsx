@@ -1,19 +1,38 @@
 import React from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ListRenderItemInfo } from 'react-native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAuth } from '../../context/AuthContext';
+import { Event, HomeStackParamList } from '../../types';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-const EVENTS = [
+type Props = NativeStackScreenProps<HomeStackParamList, 'HomeMain'>;
+
+const EVENTS: Event[] = [
   { id: '1', emoji: '⚽', title: 'Sunday Football Match', date: 'Sun, 22 Jun · 7:00 AM', location: 'Central Park Ground', going: 12 },
   { id: '2', emoji: '🎭', title: 'Cultural Evening', date: 'Sat, 28 Jun · 6:00 PM', location: 'Community Hall', going: 34 },
   { id: '3', emoji: '🏏', title: 'Cricket Tournament', date: 'Sun, 29 Jun · 8:00 AM', location: 'Sports Complex', going: 22 },
   { id: '4', emoji: '🎉', title: 'Neighbourhood BBQ', date: 'Fri, 4 Jul · 5:00 PM', location: 'Block C Garden', going: 18 },
 ];
 
-export default function HomeScreen({ navigation }) {
+export default function HomeScreen({ navigation }: Props): React.JSX.Element {
   const { user } = useAuth();
 
+  const renderItem = ({ item }: ListRenderItemInfo<Event>) => (
+    <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('EventDetail', { event: item })}>
+      <Text style={styles.cardEmoji}>{item.emoji}</Text>
+      <View style={styles.cardBody}>
+        <Text style={styles.cardTitle}>{item.title}</Text>
+        <Text style={styles.cardMeta}>📅 {item.date}</Text>
+        <Text style={styles.cardMeta}>📍 {item.location}</Text>
+      </View>
+      <View style={styles.goingBadge}>
+        <Text style={styles.goingText}>{item.going} going</Text>
+      </View>
+    </TouchableOpacity>
+  );
+
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <View>
           <Text style={styles.greeting}>Hey, {user?.name} 👋</Text>
@@ -24,25 +43,13 @@ export default function HomeScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      <FlatList
+      <FlatList<Event>
         data={EVENTS}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item: Event) => item.id}
         contentContainerStyle={{ paddingBottom: 20 }}
-        renderItem={({ item }) => (
-          <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('EventDetail', { event: item })}>
-            <Text style={styles.cardEmoji}>{item.emoji}</Text>
-            <View style={styles.cardBody}>
-              <Text style={styles.cardTitle}>{item.title}</Text>
-              <Text style={styles.cardMeta}>📅 {item.date}</Text>
-              <Text style={styles.cardMeta}>📍 {item.location}</Text>
-            </View>
-            <View style={styles.goingBadge}>
-              <Text style={styles.goingText}>{item.going} going</Text>
-            </View>
-          </TouchableOpacity>
-        )}
+        renderItem={renderItem}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 

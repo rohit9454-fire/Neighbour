@@ -1,20 +1,33 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import LottieView from 'lottie-react-native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAuth } from '../../context/AuthContext';
+import { AuthStackParamList } from '../../types';
 
-export default function LoginScreen({ navigation }) {
+type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
+
+export default function LoginScreen({ navigation }: Props): React.JSX.Element {
   const { login } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
 
-  const handleLogin = () => {
+  const handleLogin = (): void => {
     if (!email || !password) return Alert.alert('Error', 'Please fill all fields');
     login({ email, name: email.split('@')[0] });
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.logo}>🏘️</Text>
+      <View style={styles.homebg}>
+        <LottieView
+          source={require('../../assets/lottie/Home_icon.json')}
+          style={styles.lottie}
+          autoPlay
+          loop
+          renderMode="HARDWARE"
+        />
+      </View>
       <Text style={styles.title}>Welcome Back</Text>
       <Text style={styles.subtitle}>Sign in to your community</Text>
 
@@ -41,7 +54,9 @@ export default function LoginScreen({ navigation }) {
       </TouchableOpacity>
 
       <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
-        <Text style={styles.link}>Don't have an account? <Text style={styles.linkBold}>Sign Up</Text></Text>
+        <Text style={styles.link}>
+          Don't have an account? <Text style={styles.linkBold}>Sign Up</Text>
+        </Text>
       </TouchableOpacity>
     </View>
   );
@@ -49,8 +64,9 @@ export default function LoginScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F9FAFB', justifyContent: 'center', padding: 24 },
-  logo: { fontSize: 52, textAlign: 'center', marginBottom: 12 },
-  title: { fontSize: 28, fontWeight: '800', color: '#111827', textAlign: 'center' },
+  homebg: { height: 100, width: 100, backgroundColor: '#3e44f0', alignSelf: 'center', alignItems: 'center', justifyContent: 'center', borderRadius: 12 },
+  lottie: { height: 100, width: 100 },
+  title: { fontSize: 28, fontWeight: '800', color: '#111827', textAlign: 'center', marginTop: 16 },
   subtitle: { fontSize: 14, color: '#6B7280', textAlign: 'center', marginBottom: 32 },
   input: {
     backgroundColor: '#fff', borderWidth: 1, borderColor: '#E5E7EB',

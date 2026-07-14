@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAuth } from '../../context/AuthContext';
+import { AuthStackParamList } from '../../types';
 
-export default function SignUpScreen({ navigation }) {
+type Props = NativeStackScreenProps<AuthStackParamList, 'SignUp'>;
+
+export default function SignUpScreen({ navigation }: Props): React.JSX.Element {
   const { login } = useAuth();
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [name, setName] = useState<string>('');
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
 
-  const handleSignUp = () => {
+  const handleSignUp = (): void => {
     if (!name || !email || !password) return Alert.alert('Error', 'Please fill all fields');
     login({ email, name });
   };
@@ -34,7 +38,9 @@ export default function SignUpScreen({ navigation }) {
       </TouchableOpacity>
 
       <TouchableOpacity onPress={() => navigation.goBack()}>
-        <Text style={styles.link}>Already have an account? <Text style={styles.linkBold}>Login</Text></Text>
+        <Text style={styles.link}>
+          Already have an account? <Text style={styles.linkBold}>Login</Text>
+        </Text>
       </TouchableOpacity>
     </View>
   );

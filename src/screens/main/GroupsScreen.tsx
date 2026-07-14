@@ -1,7 +1,11 @@
 import React from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ListRenderItemInfo } from 'react-native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { Group, GroupsStackParamList } from '../../types';
 
-const GROUPS = [
+type Props = NativeStackScreenProps<GroupsStackParamList, 'GroupsMain'>;
+
+const GROUPS: Group[] = [
   { id: '1', emoji: '⚽', name: 'Sunday Football Club', members: 18, category: 'Sports' },
   { id: '2', emoji: '🎭', name: 'Cultural Society', members: 42, category: 'Culture' },
   { id: '3', emoji: '🏏', name: 'Cricket Lovers', members: 25, category: 'Sports' },
@@ -9,7 +13,20 @@ const GROUPS = [
   { id: '5', emoji: '🍕', name: 'Food & Potluck Gang', members: 30, category: 'Social' },
 ];
 
-export default function GroupsScreen({ navigation }) {
+export default function GroupsScreen({ navigation }: Props): React.JSX.Element {
+  const renderItem = ({ item }: ListRenderItemInfo<Group>) => (
+    <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('GroupDetail', { group: item })}>
+      <Text style={styles.emoji}>{item.emoji}</Text>
+      <View style={styles.info}>
+        <Text style={styles.name}>{item.name}</Text>
+        <Text style={styles.meta}>{item.members} members · {item.category}</Text>
+      </View>
+      <TouchableOpacity style={styles.joinBtn}>
+        <Text style={styles.joinText}>Join</Text>
+      </TouchableOpacity>
+    </TouchableOpacity>
+  );
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -19,22 +36,11 @@ export default function GroupsScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      <FlatList
+      <FlatList<Group>
         data={GROUPS}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item: Group) => item.id}
         contentContainerStyle={{ padding: 12 }}
-        renderItem={({ item }) => (
-          <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('GroupDetail', { group: item })}>
-            <Text style={styles.emoji}>{item.emoji}</Text>
-            <View style={styles.info}>
-              <Text style={styles.name}>{item.name}</Text>
-              <Text style={styles.meta}>{item.members} members · {item.category}</Text>
-            </View>
-            <TouchableOpacity style={styles.joinBtn}>
-              <Text style={styles.joinText}>Join</Text>
-            </TouchableOpacity>
-          </TouchableOpacity>
-        )}
+        renderItem={renderItem}
       />
     </View>
   );

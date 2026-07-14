@@ -1,21 +1,23 @@
 import React, { useRef, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import LottieView from 'lottie-react-native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { AuthStackParamList } from '../../types';
 
-export default function SplashScreen({ navigation }) {
-  const animationRef = useRef(null);
-  const hasNavigated = useRef(false);
+type Props = NativeStackScreenProps<AuthStackParamList, 'Splash'>;
+
+export default function SplashScreen({ navigation }: Props): React.JSX.Element {
+  const animationRef = useRef<LottieView>(null);
+  const hasNavigated = useRef<boolean>(false);
 
   useEffect(() => {
-    // Small delay ensures the LottieView is fully mounted before play() on iOS
     const timeout = setTimeout(() => {
       animationRef.current?.play();
     }, 100);
     return () => clearTimeout(timeout);
   }, []);
 
-  const handleAnimationFinish = useCallback(() => {
-    // Guard: prevent double navigation (iOS can fire this twice in edge cases)
+  const handleAnimationFinish = useCallback((): void => {
     if (hasNavigated.current) return;
     hasNavigated.current = true;
     navigation.replace('Login');
@@ -40,7 +42,7 @@ export default function SplashScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF', justifyContent: 'center', alignItems: 'center' },
-  title: { fontSize: 32, fontWeight: '800', color: '#3d22e9ff', letterSpacing: 1 },
-  subtitle: { fontSize: 16, color: '#5170ecff', marginTop: 8, marginBottom: 24 },
+  title: { fontSize: 32, fontWeight: '800', color: '#3d22e9', letterSpacing: 1 },
+  subtitle: { fontSize: 16, color: '#5170ec', marginTop: 8, marginBottom: 24 },
   lottie: { width: 350, height: 350 },
 });
