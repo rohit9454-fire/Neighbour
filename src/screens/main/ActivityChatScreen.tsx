@@ -8,18 +8,13 @@ import { useSelector, useDispatch } from 'react-redux';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootState } from '../../store';
 import { ActivitiesStackParamList, ChatMessage } from '../../types';
-import {
-  selectMessagesByActivity, selectPinnedMessages,
-  sendMessage, addReaction,
-} from '../../store/slices/chatSlice';
+import { selectMessagesByActivity, selectPinnedMessages, sendMessage, addReaction } from '../../store/slices/chatSlice';
+import { C } from '../../theme';
 
 type Props = NativeStackScreenProps<ActivitiesStackParamList, 'ActivityChat'>;
-
 const QUICK_REACTIONS = ['👍', '❤️', '😂', '🔥', '👏'];
 
-function MessageBubble({
-  msg, isMe, onReact,
-}: {
+function MessageBubble({ msg, isMe, onReact }: {
   msg: ChatMessage; isMe: boolean; onReact: (emoji: string) => void;
 }): React.JSX.Element {
   const [showReactions, setShowReactions] = useState(false);
@@ -51,7 +46,6 @@ function MessageBubble({
           <Text style={[styles.bubbleText, isMe && styles.bubbleTextMe]}>{msg.text}</Text>
         </TouchableOpacity>
 
-        {/* Reactions */}
         {totalReactions.length > 0 && (
           <View style={styles.reactionsRow}>
             {totalReactions.map(([emoji, users]) => (
@@ -62,7 +56,6 @@ function MessageBubble({
           </View>
         )}
 
-        {/* Quick Reaction Picker */}
         {showReactions && (
           <View style={[styles.reactionPicker, isMe && styles.reactionPickerMe]}>
             {QUICK_REACTIONS.map(e => (
@@ -105,15 +98,10 @@ export default function ActivityChatScreen({ route, navigation }: Props): React.
   const handleSend = () => {
     if (!text.trim() || !user) return;
     dispatch(sendMessage({
-      id: Date.now().toString(),
-      activityId,
-      senderId: user.email,
-      senderName: user.name,
-      text: text.trim(),
-      timestamp: new Date().toISOString(),
-      type: 'text',
-      delivered: true,
-      readBy: [],
+      id: Date.now().toString(), activityId,
+      senderId: user.email, senderName: user.name,
+      text: text.trim(), timestamp: new Date().toISOString(),
+      type: 'text', delivered: true, readBy: [],
     }));
     setText('');
   };
@@ -125,7 +113,6 @@ export default function ActivityChatScreen({ route, navigation }: Props): React.
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={styles.backText}>←</Text>
@@ -141,18 +128,13 @@ export default function ActivityChatScreen({ route, navigation }: Props): React.
         )}
       </View>
 
-      {/* Pinned Banner */}
       {showPinned && pinnedMessages.length > 0 && (
         <View style={styles.pinnedBanner}>
           <Text style={styles.pinnedBannerText}>📌 {pinnedMessages[0].text}</Text>
         </View>
       )}
 
-      {/* Messages */}
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={0}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <FlatList<ChatMessage>
           ref={listRef}
           data={messages}
@@ -168,7 +150,6 @@ export default function ActivityChatScreen({ route, navigation }: Props): React.
           )}
         />
 
-        {/* Input */}
         <View style={styles.inputBar}>
           <TouchableOpacity style={styles.attachBtn}>
             <Text style={styles.attachIcon}>📎</Text>
@@ -176,7 +157,7 @@ export default function ActivityChatScreen({ route, navigation }: Props): React.
           <TextInput
             style={styles.input}
             placeholder="Type a message..."
-            placeholderTextColor="#4B5563"
+            placeholderTextColor={C.textMuted}
             value={text}
             onChangeText={setText}
             multiline
@@ -195,54 +176,54 @@ export default function ActivityChatScreen({ route, navigation }: Props): React.
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1, backgroundColor: C.bg },
 
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#111', gap: 12 },
-  backText: { fontSize: 22, color: '#fff' },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: C.border, gap: 12, backgroundColor: C.bgCard },
+  backText: { fontSize: 22, color: C.textPrimary },
   headerInfo: { flex: 1 },
-  headerTitle: { fontSize: 15, fontWeight: '700', color: '#fff' },
-  headerSub: { fontSize: 11, color: '#6B7280', marginTop: 1 },
-  pinnedBtn: { fontSize: 13, color: '#93C5FD' },
+  headerTitle: { fontSize: 15, fontWeight: '700', color: C.textPrimary },
+  headerSub: { fontSize: 11, color: C.textMuted, marginTop: 1 },
+  pinnedBtn: { fontSize: 13, color: C.btnInactive },
 
-  pinnedBanner: { backgroundColor: '#1E3A8A', paddingHorizontal: 16, paddingVertical: 10 },
-  pinnedBannerText: { fontSize: 12, color: '#93C5FD', lineHeight: 18 },
+  pinnedBanner: { backgroundColor: C.bgMuted, paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.border },
+  pinnedBannerText: { fontSize: 12, color: C.btnActive, lineHeight: 18 },
 
   messagesList: { padding: 16, paddingBottom: 8 },
 
   systemMsg: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginVertical: 8 },
   pinnedIcon: { fontSize: 12 },
-  systemText: { fontSize: 11, color: '#4B5563', textAlign: 'center', backgroundColor: '#111', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 5 },
+  systemText: { fontSize: 11, color: C.textMuted, textAlign: 'center', backgroundColor: C.bgMuted, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 5 },
 
   msgRow: { flexDirection: 'row', marginBottom: 12, alignItems: 'flex-end' },
   msgRowMe: { flexDirection: 'row-reverse' },
-  msgAvatar: { width: 30, height: 30, borderRadius: 15, backgroundColor: '#2563EB', justifyContent: 'center', alignItems: 'center', marginRight: 8 },
-  msgAvatarText: { fontSize: 12, fontWeight: '700', color: '#fff' },
+  msgAvatar: { width: 30, height: 30, borderRadius: 15, backgroundColor: C.btnInactive, justifyContent: 'center', alignItems: 'center', marginRight: 8 },
+  msgAvatarText: { fontSize: 12, fontWeight: '700', color: C.textWhite },
   msgWrap: { maxWidth: '75%' },
   msgWrapMe: { alignItems: 'flex-end' },
-  msgSender: { fontSize: 11, color: '#6B7280', marginBottom: 3, marginLeft: 2 },
-  bubble: { backgroundColor: '#1A1A1A', borderRadius: 18, borderBottomLeftRadius: 4, paddingHorizontal: 14, paddingVertical: 10 },
-  bubbleMe: { backgroundColor: '#1E3A8A', borderBottomLeftRadius: 18, borderBottomRightRadius: 4 },
-  bubbleText: { fontSize: 14, color: '#E5E7EB', lineHeight: 20 },
-  bubbleTextMe: { color: '#fff' },
+  msgSender: { fontSize: 11, color: C.textMuted, marginBottom: 3, marginLeft: 2 },
+  bubble: { backgroundColor: C.bgCard, borderRadius: 18, borderBottomLeftRadius: 4, paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, borderColor: C.border },
+  bubbleMe: { backgroundColor: C.btnActive, borderWidth: 0, borderBottomLeftRadius: 18, borderBottomRightRadius: 4 },
+  bubbleText: { fontSize: 14, color: C.textPrimary, lineHeight: 20 },
+  bubbleTextMe: { color: C.textWhite },
 
   reactionsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 4 },
-  reactionBadge: { backgroundColor: '#1A1A1A', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1, borderColor: '#2A2A2A' },
-  reactionText: { fontSize: 12, color: '#D1D5DB' },
+  reactionBadge: { backgroundColor: C.bgCard, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1, borderColor: C.border },
+  reactionText: { fontSize: 12, color: C.textSecondary },
 
-  reactionPicker: { flexDirection: 'row', gap: 6, backgroundColor: '#1A1A1A', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 6, marginTop: 4, borderWidth: 1, borderColor: '#2A2A2A' },
+  reactionPicker: { flexDirection: 'row', gap: 6, backgroundColor: C.bgCard, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 6, marginTop: 4, borderWidth: 1, borderColor: C.border },
   reactionPickerMe: { alignSelf: 'flex-end' },
   reactionPickerEmoji: { fontSize: 20 },
 
   msgMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3, marginLeft: 4 },
   msgMetaMe: { justifyContent: 'flex-end', marginRight: 4 },
-  msgTime: { fontSize: 10, color: '#4B5563' },
-  deliveredIcon: { fontSize: 10, color: '#60A5FA' },
+  msgTime: { fontSize: 10, color: C.textMuted },
+  deliveredIcon: { fontSize: 10, color: C.btnInactive },
 
-  inputBar: { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 12, paddingVertical: 10, borderTopWidth: 1, borderTopColor: '#111', gap: 8 },
-  attachBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: '#111', justifyContent: 'center', alignItems: 'center' },
+  inputBar: { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 12, paddingVertical: 10, borderTopWidth: 1, borderTopColor: C.border, gap: 8, backgroundColor: C.bgCard },
+  attachBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: C.bgMuted, justifyContent: 'center', alignItems: 'center' },
   attachIcon: { fontSize: 18 },
-  input: { flex: 1, backgroundColor: '#111', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, fontSize: 14, color: '#fff', maxHeight: 100, borderWidth: 1, borderColor: '#1F2937' },
-  sendBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: '#2563EB', justifyContent: 'center', alignItems: 'center' },
-  sendBtnDisabled: { backgroundColor: '#1F2937' },
-  sendIcon: { fontSize: 18, color: '#fff', fontWeight: '700' },
+  input: { flex: 1, backgroundColor: C.bgInput, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, fontSize: 14, color: C.textPrimary, maxHeight: 100, borderWidth: 1, borderColor: C.border },
+  sendBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: C.btnInactive, justifyContent: 'center', alignItems: 'center' },
+  sendBtnDisabled: { backgroundColor: C.bgMuted },
+  sendIcon: { fontSize: 18, color: C.textWhite, fontWeight: '700' },
 });

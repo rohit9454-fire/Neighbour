@@ -41,14 +41,14 @@ export default function LoginScreen({ navigation }: Props): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F9FAFB', justifyContent: 'center', padding: 24 },
-  homebg: { height: 100, width: 100, backgroundColor: '#3e44f0', alignSelf: 'center', alignItems: 'center', justifyContent: 'center', borderRadius: 12 },
+  container: { flex: 1, backgroundColor: '#EEEFFF', justifyContent: 'center', padding: 24 },
+  homebg: { height: 100, width: 100, backgroundColor: '#004AC6', alignSelf: 'center', alignItems: 'center', justifyContent: 'center', borderRadius: 12 },
   lottie: { height: 100, width: 100 },
-  title: { fontSize: 28, fontWeight: '800', color: '#111827', textAlign: 'center', marginTop: 16 },
-  subtitle: { fontSize: 14, color: '#6B7280', textAlign: 'center', marginBottom: 32 },
-  input: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12, padding: 14, fontSize: 15, color: '#111827', marginBottom: 14 },
-  btn: { backgroundColor: '#4F46E5', borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 4 },
+  title: { fontSize: 28, fontWeight: '800', color: '#0A0F2E', textAlign: 'center', marginTop: 16 },
+  subtitle: { fontSize: 14, color: '#8B92B8', textAlign: 'center', marginBottom: 32 },
+  input: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#D6D9FF', borderRadius: 12, padding: 14, fontSize: 15, color: '#0A0F2E', marginBottom: 14 },
+  btn: { backgroundColor: '#2563EB', borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 4 },
   btnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
-  link: { textAlign: 'center', color: '#6B7280', marginTop: 20, fontSize: 14 },
-  linkBold: { color: '#4F46E5', fontWeight: '700' },
+  link: { textAlign: 'center', color: '#8B92B8', marginTop: 20, fontSize: 14 },
+  linkBold: { color: '#004AC6', fontWeight: '700' },
 });

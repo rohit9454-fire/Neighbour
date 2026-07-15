@@ -1,17 +1,13 @@
 import React, { useState } from 'react';
-import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, Share,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, Share } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSelector, useDispatch } from 'react-redux';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootState } from '../../store';
 import { ActivitiesStackParamList } from '../../types';
-import {
-  selectActivityById, joinActivity, leaveActivity,
-  selectIsJoined, selectIsCreated,
-} from '../../store/slices/activitiesSlice';
+import { selectActivityById, joinActivity, leaveActivity, selectIsJoined, selectIsCreated } from '../../store/slices/activitiesSlice';
 import { addNotification } from '../../store/slices/notificationsSlice';
+import { C } from '../../theme';
 
 type Props = NativeStackScreenProps<ActivitiesStackParamList, 'ActivityDetail'>;
 
@@ -25,16 +21,11 @@ export default function ActivityDetailScreen({ route, navigation }: Props): Reac
   const [bookmarked, setBookmarked] = useState(false);
 
   if (!activity) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <Text style={styles.notFound}>Activity not found</Text>
-      </SafeAreaView>
-    );
+    return <SafeAreaView style={styles.container}><Text style={styles.notFound}>Activity not found</Text></SafeAreaView>;
   }
 
   const remaining = activity.maxParticipants - activity.participants.length;
   const isFull = remaining <= 0;
-
   const sanitize = (s: string) => s.replace(/[\r\n<>"'`]/g, ' ').trim();
 
   const handleJoin = () => {
@@ -56,21 +47,14 @@ export default function ActivityDetailScreen({ route, navigation }: Props): Reac
   };
 
   const handleShare = async () => {
-    const title = sanitize(activity.title);
-    const location = sanitize(activity.location);
-    await Share.share({
-      message: `Join me for ${title} on ${activity.date} at ${activity.time}! 📍 ${location}`,
-    });
+    await Share.share({ message: `Join me for ${sanitize(activity.title)} on ${activity.date} at ${activity.time}! 📍 ${sanitize(activity.location)}` });
   };
 
-  const handleReport = () => {
-    Alert.alert('Report Activity', 'Thank you for your report. We will review it shortly.');
-  };
+  const handleReport = () => Alert.alert('Report Activity', 'Thank you for your report. We will review it shortly.');
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Hero */}
         <View style={styles.hero}>
           <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
             <Text style={styles.backIcon}>←</Text>
@@ -97,7 +81,6 @@ export default function ActivityDetailScreen({ route, navigation }: Props): Reac
         </View>
 
         <View style={styles.body}>
-          {/* Quick Info */}
           <View style={styles.infoGrid}>
             <View style={styles.infoItem}><Text style={styles.infoIcon}>📅</Text><Text style={styles.infoVal}>{activity.date}</Text><Text style={styles.infoLbl}>Date</Text></View>
             <View style={styles.infoItem}><Text style={styles.infoIcon}>🕐</Text><Text style={styles.infoVal}>{activity.time}</Text><Text style={styles.infoLbl}>Time</Text></View>
@@ -105,20 +88,17 @@ export default function ActivityDetailScreen({ route, navigation }: Props): Reac
             <View style={styles.infoItem}><Text style={styles.infoIcon}>👁</Text><Text style={styles.infoVal}>{activity.visibility}</Text><Text style={styles.infoLbl}>Visibility</Text></View>
           </View>
 
-          {/* Description */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>About</Text>
             <Text style={styles.description}>{activity.description}</Text>
           </View>
 
-          {/* Location */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Location</Text>
             <View style={styles.locationRow}>
               <Text style={styles.locationText}>📍 {activity.location}</Text>
               {activity.distance && <Text style={styles.distanceBadge}>{activity.distance}</Text>}
             </View>
-            {/* Map Preview Placeholder */}
             <View style={styles.mapPreview}>
               <Text style={styles.mapEmoji}>🗺️</Text>
               <Text style={styles.mapText}>Map Preview</Text>
@@ -126,7 +106,6 @@ export default function ActivityDetailScreen({ route, navigation }: Props): Reac
             </View>
           </View>
 
-          {/* Organizer */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Organizer</Text>
             <View style={styles.organizerRow}>
@@ -141,13 +120,10 @@ export default function ActivityDetailScreen({ route, navigation }: Props): Reac
             </View>
           </View>
 
-          {/* Participants */}
           <View style={styles.section}>
             <View style={styles.participantsHeader}>
               <Text style={styles.sectionTitle}>Participants</Text>
-              <Text style={styles.participantCount}>
-                {activity.participants.length}/{activity.maxParticipants}
-              </Text>
+              <Text style={styles.participantCount}>{activity.participants.length}/{activity.maxParticipants}</Text>
             </View>
             <View style={styles.participantsRow}>
               {activity.participants.slice(0, 6).map((p, i) => (
@@ -156,20 +132,17 @@ export default function ActivityDetailScreen({ route, navigation }: Props): Reac
                 </View>
               ))}
               {activity.participants.length > 6 && (
-                <View style={[styles.participantAvatar, { marginLeft: -8, backgroundColor: '#374151' }]}>
-                  <Text style={styles.participantAvatarText}>+{activity.participants.length - 6}</Text>
+                <View style={[styles.participantAvatar, { marginLeft: -8, backgroundColor: C.bgMuted }]}>
+                  <Text style={[styles.participantAvatarText, { color: C.textSecondary }]}>+{activity.participants.length - 6}</Text>
                 </View>
               )}
             </View>
             <View style={styles.slotsBar}>
               <View style={[styles.slotsBarFill, { width: `${(activity.participants.length / activity.maxParticipants) * 100}%` as any }]} />
             </View>
-            <Text style={styles.slotsText}>
-              {remaining > 0 ? `${remaining} slots remaining` : 'Activity is full'}
-            </Text>
+            <Text style={styles.slotsText}>{remaining > 0 ? `${remaining} slots remaining` : 'Activity is full'}</Text>
           </View>
 
-          {/* Rules */}
           {activity.rules && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Rules & Guidelines</Text>
@@ -179,26 +152,20 @@ export default function ActivityDetailScreen({ route, navigation }: Props): Reac
             </View>
           )}
 
-          {/* Chat Button */}
-          <TouchableOpacity
-            style={styles.chatBtn}
+          <TouchableOpacity style={styles.chatBtn}
             onPress={() => navigation.navigate('ActivityChat', { activityId, activityTitle: activity.title })}>
             <Text style={styles.chatBtnText}>💬 Open Activity Chat</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
 
-      {/* Bottom CTA */}
       <View style={styles.bottomBar}>
         {isJoined ? (
           <TouchableOpacity style={styles.leaveBtn} onPress={handleLeave}>
             <Text style={styles.leaveBtnText}>Leave Activity</Text>
           </TouchableOpacity>
         ) : (
-          <TouchableOpacity
-            style={[styles.joinBtn, isFull && styles.joinBtnDisabled]}
-            onPress={handleJoin}
-            disabled={isFull}>
+          <TouchableOpacity style={[styles.joinBtn, isFull && styles.joinBtnDisabled]} onPress={handleJoin} disabled={isFull}>
             <Text style={styles.joinBtnText}>{isFull ? 'Activity Full' : 'Join Activity →'}</Text>
           </TouchableOpacity>
         )}
@@ -208,69 +175,68 @@ export default function ActivityDetailScreen({ route, navigation }: Props): Reac
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
-  notFound: { color: '#fff', textAlign: 'center', marginTop: 40, fontSize: 16 },
+  container: { flex: 1, backgroundColor: C.bg },
+  notFound: { color: C.textPrimary, textAlign: 'center', marginTop: 40, fontSize: 16 },
 
-  hero: { backgroundColor: '#0F172A', paddingTop: 56, paddingBottom: 28, paddingHorizontal: 20, position: 'relative' },
-  backBtn: { position: 'absolute', top: 16, left: 16, width: 36, height: 36, borderRadius: 18, backgroundColor: '#1E293B', justifyContent: 'center', alignItems: 'center', zIndex: 10 },
-  backIcon: { fontSize: 18, color: '#fff' },
+  hero: { backgroundColor: C.btnActive, paddingTop: 56, paddingBottom: 28, paddingHorizontal: 20, position: 'relative' },
+  backBtn: { position: 'absolute', top: 16, left: 16, width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', zIndex: 10 },
+  backIcon: { fontSize: 18, color: C.textWhite },
   heroActions: { position: 'absolute', top: 16, right: 16, flexDirection: 'row', gap: 8, zIndex: 10 },
-  iconBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#1E293B', justifyContent: 'center', alignItems: 'center' },
+  iconBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
   iconBtnText: { fontSize: 16 },
   heroContent: { alignItems: 'center', marginTop: 8 },
   heroEmoji: { fontSize: 64, marginBottom: 12 },
-  heroCategoryBadge: { backgroundColor: '#1E3A8A', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 5, marginBottom: 10 },
-  heroCategoryText: { fontSize: 12, color: '#93C5FD', fontWeight: '600' },
-  heroTitle: { fontSize: 22, fontWeight: '700', color: '#fff', textAlign: 'center', marginBottom: 8 },
-  heroWeather: { fontSize: 14, color: '#94A3B8' },
+  heroCategoryBadge: { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 5, marginBottom: 10 },
+  heroCategoryText: { fontSize: 12, color: C.textWhite, fontWeight: '600' },
+  heroTitle: { fontSize: 22, fontWeight: '700', color: C.textWhite, textAlign: 'center', marginBottom: 8 },
+  heroWeather: { fontSize: 14, color: 'rgba(255,255,255,0.75)' },
 
   body: { padding: 20 },
-
-  infoGrid: { flexDirection: 'row', backgroundColor: '#111', borderRadius: 16, padding: 16, marginBottom: 20, justifyContent: 'space-between' },
+  infoGrid: { flexDirection: 'row', backgroundColor: C.bgCard, borderRadius: 16, padding: 16, marginBottom: 20, justifyContent: 'space-between', shadowColor: C.shadow, shadowOpacity: 0.08, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
   infoItem: { alignItems: 'center', flex: 1 },
   infoIcon: { fontSize: 18, marginBottom: 4 },
-  infoVal: { fontSize: 12, fontWeight: '700', color: '#fff', textAlign: 'center' },
-  infoLbl: { fontSize: 10, color: '#6B7280', marginTop: 2 },
+  infoVal: { fontSize: 12, fontWeight: '700', color: C.textPrimary, textAlign: 'center' },
+  infoLbl: { fontSize: 10, color: C.textMuted, marginTop: 2 },
 
   section: { marginBottom: 24 },
-  sectionTitle: { fontSize: 15, fontWeight: '700', color: '#fff', marginBottom: 10 },
-  description: { fontSize: 14, color: '#9CA3AF', lineHeight: 22 },
+  sectionTitle: { fontSize: 15, fontWeight: '700', color: C.textPrimary, marginBottom: 10 },
+  description: { fontSize: 14, color: C.textSecondary, lineHeight: 22 },
 
   locationRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  locationText: { fontSize: 14, color: '#D1D5DB', flex: 1 },
-  distanceBadge: { backgroundColor: '#1E3A8A', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, fontSize: 12, color: '#93C5FD', fontWeight: '600' },
-  mapPreview: { backgroundColor: '#111', borderRadius: 16, height: 140, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#1F2937' },
+  locationText: { fontSize: 14, color: C.textSecondary, flex: 1 },
+  distanceBadge: { backgroundColor: C.bgMuted, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, fontSize: 12, color: C.btnActive, fontWeight: '600' },
+  mapPreview: { backgroundColor: C.bgCard, borderRadius: 16, height: 140, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: C.border },
   mapEmoji: { fontSize: 36, marginBottom: 8 },
-  mapText: { fontSize: 14, fontWeight: '600', color: '#6B7280' },
-  mapSub: { fontSize: 12, color: '#4B5563', marginTop: 4 },
+  mapText: { fontSize: 14, fontWeight: '600', color: C.textMuted },
+  mapSub: { fontSize: 12, color: C.textMuted, marginTop: 4 },
 
   organizerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  organizerAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#2563EB', justifyContent: 'center', alignItems: 'center' },
-  organizerAvatarText: { fontSize: 18, fontWeight: '700', color: '#fff' },
-  organizerName: { fontSize: 15, fontWeight: '600', color: '#fff' },
-  organizerRole: { fontSize: 12, color: '#6B7280', marginTop: 2 },
-  youBadge: { marginLeft: 'auto' as any, backgroundColor: '#1E3A8A', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
-  youBadgeText: { fontSize: 11, color: '#93C5FD', fontWeight: '600' },
+  organizerAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.btnInactive, justifyContent: 'center', alignItems: 'center' },
+  organizerAvatarText: { fontSize: 18, fontWeight: '700', color: C.textWhite },
+  organizerName: { fontSize: 15, fontWeight: '600', color: C.textPrimary },
+  organizerRole: { fontSize: 12, color: C.textMuted, marginTop: 2 },
+  youBadge: { marginLeft: 'auto' as any, backgroundColor: C.bgMuted, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
+  youBadgeText: { fontSize: 11, color: C.btnActive, fontWeight: '600' },
 
   participantsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  participantCount: { fontSize: 13, color: '#6B7280' },
+  participantCount: { fontSize: 13, color: C.textMuted },
   participantsRow: { flexDirection: 'row', marginBottom: 12 },
-  participantAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#2563EB', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#000' },
-  participantAvatarText: { fontSize: 12, fontWeight: '700', color: '#fff' },
-  slotsBar: { height: 6, backgroundColor: '#1F2937', borderRadius: 3, marginBottom: 6, overflow: 'hidden' },
-  slotsBarFill: { height: '100%', backgroundColor: '#2563EB', borderRadius: 3 },
-  slotsText: { fontSize: 12, color: '#6B7280' },
+  participantAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: C.btnInactive, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: C.bg },
+  participantAvatarText: { fontSize: 12, fontWeight: '700', color: C.textWhite },
+  slotsBar: { height: 6, backgroundColor: C.bgMuted, borderRadius: 3, marginBottom: 6, overflow: 'hidden' },
+  slotsBarFill: { height: '100%', backgroundColor: C.btnInactive, borderRadius: 3 },
+  slotsText: { fontSize: 12, color: C.textMuted },
 
-  rulesCard: { backgroundColor: '#111', borderRadius: 14, padding: 14, borderLeftWidth: 3, borderLeftColor: '#2563EB' },
-  rulesText: { fontSize: 13, color: '#9CA3AF', lineHeight: 20 },
+  rulesCard: { backgroundColor: C.bgCard, borderRadius: 14, padding: 14, borderLeftWidth: 3, borderLeftColor: C.btnInactive },
+  rulesText: { fontSize: 13, color: C.textSecondary, lineHeight: 20 },
 
-  chatBtn: { backgroundColor: '#111', borderRadius: 14, padding: 16, alignItems: 'center', marginBottom: 80, borderWidth: 1, borderColor: '#1F2937' },
-  chatBtnText: { fontSize: 14, color: '#93C5FD', fontWeight: '600' },
+  chatBtn: { backgroundColor: C.bgMuted, borderRadius: 14, padding: 16, alignItems: 'center', marginBottom: 80, borderWidth: 1, borderColor: C.border },
+  chatBtnText: { fontSize: 14, color: C.btnActive, fontWeight: '600' },
 
-  bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 20, backgroundColor: '#000', borderTopWidth: 1, borderTopColor: '#111' },
-  joinBtn: { backgroundColor: '#2563EB', borderRadius: 16, height: 56, justifyContent: 'center', alignItems: 'center' },
-  joinBtnDisabled: { backgroundColor: '#1F2937' },
-  joinBtnText: { fontSize: 16, fontWeight: '700', color: '#fff' },
-  leaveBtn: { backgroundColor: '#1A0A0A', borderRadius: 16, height: 56, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#EF4444' },
-  leaveBtnText: { fontSize: 16, fontWeight: '700', color: '#EF4444' },
+  bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 20, backgroundColor: C.bg, borderTopWidth: 1, borderTopColor: C.border },
+  joinBtn: { backgroundColor: C.btnInactive, borderRadius: 16, height: 56, justifyContent: 'center', alignItems: 'center' },
+  joinBtnDisabled: { backgroundColor: C.bgMuted },
+  joinBtnText: { fontSize: 16, fontWeight: '700', color: C.textWhite },
+  leaveBtn: { backgroundColor: C.dangerBg, borderRadius: 16, height: 56, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: C.danger },
+  leaveBtnText: { fontSize: 16, fontWeight: '700', color: C.danger },
 });

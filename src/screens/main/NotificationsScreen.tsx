@@ -1,31 +1,22 @@
 import React from 'react';
-import {
-  View, Text, FlatList, TouchableOpacity, StyleSheet, ListRenderItemInfo,
-} from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ListRenderItemInfo } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSelector, useDispatch } from 'react-redux';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootState } from '../../store';
 import { HomeStackParamList, AppNotification, NotificationType } from '../../types';
-import {
-  markAsRead, markAllAsRead, deleteNotification,
-} from '../../store/slices/notificationsSlice';
+import { markAsRead, markAllAsRead, deleteNotification } from '../../store/slices/notificationsSlice';
+import { C } from '../../theme';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'Notifications'>;
 
 const TYPE_ICON: Record<NotificationType, string> = {
-  activity_joined: '🙋',
-  reminder: '⏰',
-  activity_updated: '✏️',
-  chat: '💬',
-  community_bulletin: '📢',
+  activity_joined: '🙋', reminder: '⏰', activity_updated: '✏️',
+  chat: '💬', community_bulletin: '📢',
 };
 
 function getGroup(timestamp: string): 'Today' | 'Yesterday' | 'Earlier' {
-  const now = new Date();
-  const d = new Date(timestamp);
-  const diffMs = now.getTime() - d.getTime();
-  const diffHrs = diffMs / (1000 * 60 * 60);
+  const diffHrs = (Date.now() - new Date(timestamp).getTime()) / (1000 * 60 * 60);
   if (diffHrs < 24) return 'Today';
   if (diffHrs < 48) return 'Yesterday';
   return 'Earlier';
@@ -37,14 +28,11 @@ export default function NotificationsScreen({ navigation }: Props): React.JSX.El
 
   const grouped: Record<string, AppNotification[]> = { Today: [], Yesterday: [], Earlier: [] };
   notifications.forEach(n => grouped[getGroup(n.timestamp)].push(n));
-
   const sections = (['Today', 'Yesterday', 'Earlier'] as const).filter(g => grouped[g].length > 0);
 
   const handlePress = (n: AppNotification) => {
     dispatch(markAsRead(n.id));
-    if (n.activityId) {
-      navigation.navigate('ActivityDetail', { activityId: n.activityId });
-    }
+    if (n.activityId) navigation.navigate('ActivityDetail', { activityId: n.activityId });
   };
 
   const renderItem = ({ item }: ListRenderItemInfo<AppNotification>) => (
@@ -104,27 +92,27 @@ export default function NotificationsScreen({ navigation }: Props): React.JSX.El
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#111' },
-  backText: { fontSize: 22, color: '#fff' },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#fff' },
-  markAllText: { fontSize: 13, color: '#2563EB', fontWeight: '600' },
+  container: { flex: 1, backgroundColor: C.bg },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: C.border, backgroundColor: C.bgCard },
+  backText: { fontSize: 22, color: C.textPrimary },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: C.textPrimary },
+  markAllText: { fontSize: 13, color: C.btnInactive, fontWeight: '600' },
 
-  groupLabel: { fontSize: 12, fontWeight: '700', color: '#4B5563', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8, letterSpacing: 0.5 },
+  groupLabel: { fontSize: 12, fontWeight: '700', color: C.textMuted, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8, letterSpacing: 0.5 },
 
-  item: { flexDirection: 'row', alignItems: 'flex-start', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#0D0D0D' },
-  itemUnread: { backgroundColor: '#0A0F1A' },
-  iconWrap: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#111', justifyContent: 'center', alignItems: 'center', marginRight: 12, position: 'relative' },
+  item: { flexDirection: 'row', alignItems: 'flex-start', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: C.divider, backgroundColor: C.bgCard },
+  itemUnread: { backgroundColor: C.bgMuted },
+  iconWrap: { width: 40, height: 40, borderRadius: 20, backgroundColor: C.bgInput, justifyContent: 'center', alignItems: 'center', marginRight: 12, position: 'relative' },
   icon: { fontSize: 18 },
-  unreadDot: { position: 'absolute', top: 2, right: 2, width: 8, height: 8, borderRadius: 4, backgroundColor: '#2563EB' },
+  unreadDot: { position: 'absolute', top: 2, right: 2, width: 8, height: 8, borderRadius: 4, backgroundColor: C.btnActive },
   itemContent: { flex: 1 },
-  itemTitle: { fontSize: 14, fontWeight: '600', color: '#fff', marginBottom: 3 },
-  itemBody: { fontSize: 12, color: '#9CA3AF', lineHeight: 18 },
-  itemTime: { fontSize: 11, color: '#4B5563', marginTop: 4 },
+  itemTitle: { fontSize: 14, fontWeight: '600', color: C.textPrimary, marginBottom: 3 },
+  itemBody: { fontSize: 12, color: C.textSecondary, lineHeight: 18 },
+  itemTime: { fontSize: 11, color: C.textMuted, marginTop: 4 },
   deleteBtn: { padding: 4 },
-  deleteIcon: { fontSize: 14, color: '#374151' },
+  deleteIcon: { fontSize: 14, color: C.textMuted },
 
   empty: { alignItems: 'center', paddingTop: 80 },
   emptyEmoji: { fontSize: 48, marginBottom: 12 },
-  emptyText: { fontSize: 15, color: '#6B7280' },
+  emptyText: { fontSize: 15, color: C.textMuted },
 });

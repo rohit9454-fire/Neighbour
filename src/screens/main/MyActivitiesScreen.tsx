@@ -1,23 +1,19 @@
 import React, { useState } from 'react';
-import {
-  View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, ListRenderItemInfo,
-} from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, ListRenderItemInfo } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSelector, useDispatch } from 'react-redux';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootState } from '../../store';
 import { ActivitiesStackParamList, Activity } from '../../types';
-import {
-  selectMyJoined, selectMyCreated, leaveActivity,
-  cancelActivity, deleteActivity,
-} from '../../store/slices/activitiesSlice';
+import { selectMyJoined, selectMyCreated, leaveActivity, cancelActivity, deleteActivity } from '../../store/slices/activitiesSlice';
+import { C } from '../../theme';
 
 type Props = NativeStackScreenProps<ActivitiesStackParamList, 'MyActivities'>;
 type TabKey = 'Joined' | 'Created' | 'Completed' | 'Cancelled';
 const TABS: TabKey[] = ['Joined', 'Created', 'Completed', 'Cancelled'];
 
 const STATUS_COLOR: Record<string, string> = {
-  upcoming: '#4ADE80', completed: '#60A5FA', cancelled: '#F87171',
+  upcoming: C.success, completed: '#2563EB', cancelled: C.danger,
 };
 
 export default function MyActivitiesScreen({ navigation }: Props): React.JSX.Element {
@@ -43,7 +39,7 @@ export default function MyActivitiesScreen({ navigation }: Props): React.JSX.Ele
   };
 
   const handleCancel = (activity: Activity) => {
-    Alert.alert('Cancel Activity', `Cancel "${activity.title}"? This cannot be undone.`, [
+    Alert.alert('Cancel Activity', `Cancel "${activity.title}"?`, [
       { text: 'No', style: 'cancel' },
       { text: 'Cancel Activity', style: 'destructive', onPress: () => dispatch(cancelActivity(activity.id)) },
     ]);
@@ -66,43 +62,33 @@ export default function MyActivitiesScreen({ navigation }: Props): React.JSX.Ele
           <Text style={styles.cardMeta}>📍 {item.location}</Text>
           <Text style={styles.cardMeta}>👥 {item.participants.length}/{item.maxParticipants} participants</Text>
         </View>
-        <View style={[styles.statusDot, { backgroundColor: STATUS_COLOR[item.status] ?? '#6B7280' }]} />
+        <View style={[styles.statusDot, { backgroundColor: STATUS_COLOR[item.status] ?? C.textMuted }]} />
       </View>
-
       <View style={styles.cardActions}>
-        <TouchableOpacity
-          style={styles.actionBtn}
-          onPress={() => navigation.navigate('ActivityDetail', { activityId: item.id })}>
+        <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('ActivityDetail', { activityId: item.id })}>
           <Text style={styles.actionBtnText}>View</Text>
         </TouchableOpacity>
-
         {activeTab === 'Created' && item.status === 'upcoming' && (
           <>
             <TouchableOpacity style={styles.actionBtn} onPress={() => handleCancel(item)}>
-              <Text style={[styles.actionBtnText, { color: '#F87171' }]}>Cancel</Text>
+              <Text style={[styles.actionBtnText, { color: C.danger }]}>Cancel</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.actionBtn} onPress={() => handleDelete(item)}>
-              <Text style={[styles.actionBtnText, { color: '#EF4444' }]}>Delete</Text>
+              <Text style={[styles.actionBtnText, { color: C.danger }]}>Delete</Text>
             </TouchableOpacity>
           </>
         )}
-
         {activeTab === 'Joined' && (
           <TouchableOpacity style={styles.actionBtn} onPress={() => handleLeave(item)}>
-            <Text style={[styles.actionBtnText, { color: '#F87171' }]}>Leave</Text>
+            <Text style={[styles.actionBtnText, { color: C.danger }]}>Leave</Text>
           </TouchableOpacity>
         )}
-
-        <TouchableOpacity
-          style={styles.actionBtn}
-          onPress={() => navigation.navigate('ActivityChat', { activityId: item.id, activityTitle: item.title })}>
-          <Text style={[styles.actionBtnText, { color: '#93C5FD' }]}>Chat</Text>
+        <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('ActivityChat', { activityId: item.id, activityTitle: item.title })}>
+          <Text style={[styles.actionBtnText, { color: C.btnInactive }]}>Chat</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
-
-  const data = getData();
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -113,23 +99,15 @@ export default function MyActivitiesScreen({ navigation }: Props): React.JSX.Ele
         <Text style={styles.headerTitle}>My Activities</Text>
         <View style={{ width: 32 }} />
       </View>
-
-      {/* Tabs */}
       <View style={styles.tabsRow}>
         {TABS.map(tab => (
-          <TouchableOpacity
-            key={tab}
-            style={[styles.tab, activeTab === tab && styles.tabActive]}
-            onPress={() => setActiveTab(tab)}>
+          <TouchableOpacity key={tab} style={[styles.tab, activeTab === tab && styles.tabActive]} onPress={() => setActiveTab(tab)}>
             <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>{tab}</Text>
           </TouchableOpacity>
         ))}
       </View>
-
       <FlatList<Activity>
-        data={data}
-        keyExtractor={item => item.id}
-        renderItem={renderItem}
+        data={getData()} keyExtractor={item => item.id} renderItem={renderItem}
         contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
@@ -144,30 +122,26 @@ export default function MyActivitiesScreen({ navigation }: Props): React.JSX.Ele
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1, backgroundColor: C.bg },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14 },
-  backText: { fontSize: 22, color: '#fff' },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#fff' },
-
+  backText: { fontSize: 22, color: C.textPrimary },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: C.textPrimary },
   tabsRow: { flexDirection: 'row', paddingHorizontal: 16, marginBottom: 8, gap: 8 },
-  tab: { flex: 1, paddingVertical: 9, borderRadius: 12, backgroundColor: '#111', alignItems: 'center', borderWidth: 1, borderColor: '#1F2937' },
-  tabActive: { backgroundColor: '#1E3A8A', borderColor: '#2563EB' },
-  tabText: { fontSize: 11, color: '#6B7280', fontWeight: '500' },
-  tabTextActive: { color: '#93C5FD', fontWeight: '700' },
-
-  card: { backgroundColor: '#111', borderRadius: 16, padding: 16, marginBottom: 12 },
+  tab: { flex: 1, paddingVertical: 9, borderRadius: 12, backgroundColor: C.bgCard, alignItems: 'center', borderWidth: 1, borderColor: C.border },
+  tabActive: { backgroundColor: C.btnActive, borderColor: C.btnActive },
+  tabText: { fontSize: 11, color: C.textMuted, fontWeight: '500' },
+  tabTextActive: { color: C.textWhite, fontWeight: '700' },
+  card: { backgroundColor: C.bgCard, borderRadius: 16, padding: 16, marginBottom: 12, shadowColor: C.shadow, shadowOpacity: 0.08, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
   cardTop: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 12 },
   cardEmoji: { fontSize: 32, marginRight: 12 },
   cardInfo: { flex: 1 },
-  cardTitle: { fontSize: 15, fontWeight: '700', color: '#fff', marginBottom: 4 },
-  cardMeta: { fontSize: 12, color: '#9CA3AF', marginTop: 2 },
+  cardTitle: { fontSize: 15, fontWeight: '700', color: C.textPrimary, marginBottom: 4 },
+  cardMeta: { fontSize: 12, color: C.textSecondary, marginTop: 2 },
   statusDot: { width: 10, height: 10, borderRadius: 5, marginTop: 4 },
-
-  cardActions: { flexDirection: 'row', gap: 8, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#1F2937' },
-  actionBtn: { backgroundColor: '#1A1A1A', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: '#2A2A2A' },
-  actionBtnText: { fontSize: 12, color: '#D1D5DB', fontWeight: '600' },
-
+  cardActions: { flexDirection: 'row', gap: 8, paddingTop: 10, borderTopWidth: 1, borderTopColor: C.divider },
+  actionBtn: { backgroundColor: C.bgMuted, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 },
+  actionBtnText: { fontSize: 12, color: C.textSecondary, fontWeight: '600' },
   empty: { alignItems: 'center', paddingTop: 60 },
   emptyEmoji: { fontSize: 48, marginBottom: 12 },
-  emptyText: { fontSize: 15, color: '#6B7280' },
+  emptyText: { fontSize: 15, color: C.textMuted },
 });

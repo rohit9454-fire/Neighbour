@@ -135,11 +135,11 @@ export default function AppNavigator(): React.JSX.Element {
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#2563EB',
-        tabBarInactiveTintColor: '#4B5563',
+        tabBarActiveTintColor: '#004AC6',
+        tabBarInactiveTintColor: '#8B92B8',
         tabBarStyle: {
-          backgroundColor: '#0A0A0A',
-          borderTopColor: '#111',
+          backgroundColor: '#FFFFFF',
+          borderTopColor: '#E8EAFF',
           height: 64,
           paddingBottom: 10,
           paddingTop: 6,
@@ -170,13 +170,13 @@ export default function AppNavigator(): React.JSX.Element {
           tabBarIcon: ({ focused }) => (
             <View style={{
               width: 46, height: 46, borderRadius: 23,
-              backgroundColor: focused ? '#2563EB' : '#1E3A8A',
+              backgroundColor: focused ? '#004AC6' : '#EEEFFF',
               justifyContent: 'center', alignItems: 'center',
               marginBottom: 4,
               shadowColor: '#2563EB', shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 2 },
               elevation: 6,
             }}>
-              <Text style={{ fontSize: 22, color: '#fff' }}>＋</Text>
+              <Text style={{ fontSize: 22, color: focused ? '#FFFFFF' : '#004AC6' }}>＋</Text>
             </View>
           ),
         }}
