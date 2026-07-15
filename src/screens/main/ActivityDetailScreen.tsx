@@ -35,13 +35,15 @@ export default function ActivityDetailScreen({ route, navigation }: Props): Reac
   const remaining = activity.maxParticipants - activity.participants.length;
   const isFull = remaining <= 0;
 
+  const sanitize = (s: string) => s.replace(/[\r\n<>"'`]/g, ' ').trim();
+
   const handleJoin = () => {
     if (!user) return;
     dispatch(joinActivity({ activityId, userName: user.name }));
     dispatch(addNotification({
       id: Date.now().toString(), type: 'activity_joined',
-      title: `You joined ${activity.title}`,
-      body: `See you at ${activity.location} on ${activity.date} at ${activity.time}`,
+      title: `You joined ${sanitize(activity.title)}`,
+      body: `See you at ${sanitize(activity.location)} on ${activity.date} at ${activity.time}`,
       timestamp: new Date().toISOString(), read: false, activityId,
     }));
   };
@@ -52,8 +54,6 @@ export default function ActivityDetailScreen({ route, navigation }: Props): Reac
       { text: 'Leave', style: 'destructive', onPress: () => user && dispatch(leaveActivity({ activityId, userName: user.name })) },
     ]);
   };
-
-  const sanitize = (s: string) => s.replace(/[\r\n<>"'`]/g, ' ').trim();
 
   const handleShare = async () => {
     const title = sanitize(activity.title);
