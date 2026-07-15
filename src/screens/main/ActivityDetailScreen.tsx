@@ -56,10 +56,13 @@ export default function ActivityDetailScreen({ route, navigation }: Props): Reac
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScrollView showsVerticalScrollIndicator={false}>
+        
         <View style={styles.hero}>
+
           <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
             <Icon name="arrow-left" size={20} color={C.textWhite} />
           </TouchableOpacity>
+
           <View style={styles.heroActions}>
             <TouchableOpacity style={styles.iconBtn} onPress={() => setBookmarked(b => !b)}>
               <Icon name={bookmarked ? 'bookmark' : 'bookmark-outline'} size={18} color={C.textWhite} />
@@ -71,6 +74,7 @@ export default function ActivityDetailScreen({ route, navigation }: Props): Reac
               <Icon name="flag-outline" size={18} color={C.textWhite} />
             </TouchableOpacity>
           </View>
+
           <View style={styles.heroContent}>
             <Text style={styles.heroEmoji}>{activity.emoji}</Text>
             <View style={styles.heroCategoryBadge}>
@@ -79,6 +83,7 @@ export default function ActivityDetailScreen({ route, navigation }: Props): Reac
             <Text style={styles.heroTitle}>{activity.title}</Text>
             {activity.weather && <Text style={styles.heroWeather}>{activity.weather}</Text>}
           </View>
+
         </View>
 
         <View style={styles.body}>
@@ -181,9 +186,15 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
   notFound: { color: C.textPrimary, textAlign: 'center', marginTop: 40, fontSize: 16 },
 
-  hero: { backgroundColor: C.btnActive, paddingTop: 56, paddingBottom: 28, paddingHorizontal: 20, position: 'relative' },
-  backBtn: { position: 'absolute', top: 16, left: 16, width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', zIndex: 10 },
-  heroActions: { position: 'absolute', top: 16, right: 16, flexDirection: 'row', gap: 8, zIndex: 10 },
+  hero: { 
+    backgroundColor: C.btnActive, 
+    paddingTop: 56, 
+    paddingBottom: 28, 
+    paddingHorizontal: 20, 
+    position: 'relative' 
+  },
+  backBtn: { position: 'absolute', top: 50, left: 16, width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', zIndex: 10 },
+  heroActions: { position: 'absolute', top: 50, right: 16, flexDirection: 'row', gap: 8, zIndex: 10 },
   iconBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
   heroContent: { alignItems: 'center', marginTop: 8 },
   heroEmoji: { fontSize: 64, marginBottom: 12 },

@@ -80,7 +80,7 @@ export default function ActivitiesScreen({ navigation }: Props): React.JSX.Eleme
           <Text style={styles.cardEmoji}>{item.emoji}</Text>
           <View style={styles.cardMid}>
             <Text style={styles.cardTitle} numberOfLines={1}>{item.title}</Text>
-          <Text style={styles.cardMeta}><Icon name="map-marker" size={12} color={C.textSecondary} /> {item.location}</Text>
+            <Text style={styles.cardMeta}><Icon name="map-marker" size={12} color={C.textSecondary} /> {item.location}</Text>
             <Text style={styles.cardMeta}><Icon name="calendar" size={12} color={C.textSecondary} /> {item.date} · {item.time} · <Icon name="clock-outline" size={12} color={C.textSecondary} /> {item.duration}</Text>
             <Text style={styles.cardMeta}><Icon name="account" size={12} color={C.textSecondary} /> {item.host}</Text>
           </View>
@@ -100,6 +100,7 @@ export default function ActivitiesScreen({ navigation }: Props): React.JSX.Eleme
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Activities</Text>
         <TouchableOpacity style={styles.myBtn} onPress={() => navigation.navigate('MyActivities')}>
@@ -116,24 +117,23 @@ export default function ActivitiesScreen({ navigation }: Props): React.JSX.Eleme
           </TouchableOpacity>
         )}
       </View>
-
-      <FlatList horizontal data={FILTERS} keyExtractor={f => f} showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filterList}
-        renderItem={({ item: f }) => (
-          <TouchableOpacity style={[styles.filterChip, activeFilter === f && styles.filterChipActive]}
-            onPress={() => { setActiveFilter(f); setPage(1); }}>
-            <Text style={[styles.filterChipText, activeFilter === f && styles.filterChipTextActive]}>{f}</Text>
-          </TouchableOpacity>
-        )} />
-
-      <FlatList horizontal data={SORTS} keyExtractor={s => s} showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.sortList}
-        renderItem={({ item: s }) => (
-          <TouchableOpacity style={[styles.sortChip, activeSort === s && styles.sortChipActive]} onPress={() => setActiveSort(s)}>
-            <Text style={[styles.sortChipText, activeSort === s && styles.sortChipTextActive]}>{s}</Text>
-          </TouchableOpacity>
-        )} />
-
+      <View>
+        <FlatList horizontal data={FILTERS} keyExtractor={f => f} showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterList}
+          renderItem={({ item: f }) => (
+            <TouchableOpacity style={[styles.filterChip, activeFilter === f && styles.filterChipActive]}
+              onPress={() => { setActiveFilter(f); setPage(1); }}>
+              <Text style={[styles.filterChipText, activeFilter === f && styles.filterChipTextActive]}>{f}</Text>
+            </TouchableOpacity>
+          )} />
+        <FlatList horizontal data={SORTS} keyExtractor={s => s} showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.sortList}
+          renderItem={({ item: s }) => (
+            <TouchableOpacity style={[styles.sortChip, activeSort === s && styles.sortChipActive]} onPress={() => setActiveSort(s)}>
+              <Text style={[styles.sortChipText, activeSort === s && styles.sortChipTextActive]}>{s}</Text>
+            </TouchableOpacity>
+          )} />
+      </View>
       <FlatList<Activity>
         data={paginated} keyExtractor={item => item.id} renderItem={renderItem}
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 }}
@@ -153,22 +153,46 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 22, fontWeight: '700', color: C.textPrimary },
   myBtn: { backgroundColor: C.bgMuted, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 8 },
   myBtnText: { fontSize: 12, color: C.btnActive, fontWeight: '600' },
-
   searchWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.bgCard, borderRadius: 14, marginHorizontal: 16, marginBottom: 12, paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, borderColor: C.border },
   searchInput: { flex: 1, fontSize: 14, color: C.textPrimary },
 
-  filterList: { paddingHorizontal: 16, paddingBottom: 8, gap: 8 },
-  filterChip: { borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7, backgroundColor: C.bgCard, borderWidth: 1, borderColor: C.border },
-  filterChipActive: { backgroundColor: C.btnActive, borderColor: C.btnActive },
+  filterList: {
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+    gap: 8,
+    height: 50
+  },
+
+  filterChip: { borderRadius: 20, height: 36, paddingHorizontal: 14, paddingVertical: 7, backgroundColor: C.bgCard, borderWidth: 1, borderColor: C.border },
+  filterChipActive: { height: 38, backgroundColor: C.btnActive, borderColor: C.btnActive },
   filterChipText: { fontSize: 12, color: C.textSecondary, fontWeight: '500' },
   filterChipTextActive: { color: C.textWhite, fontWeight: '700' },
 
-  sortList: { paddingHorizontal: 16, paddingBottom: 12, gap: 8 },
-  sortChip: { borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5, backgroundColor: C.bgCard, borderWidth: 1, borderColor: C.border },
-  sortChipActive: { borderColor: C.btnActive },
-  sortChipText: { fontSize: 11, color: C.textMuted },
+  sortList: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    gap: 8,
+    marginTop: 15
+  },
+  sortChip: {
+    borderRadius: 20,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    backgroundColor: C.bgCard,
+    borderWidth: 1,
+    borderColor: C.border
+  },
+  sortChipActive: {
+    borderColor: C.btnActive
+  },
+  sortChipText: {
+    fontSize: 11,
+    color: C.textMuted
+  },
   sortChipTextActive: { color: C.btnActive, fontWeight: '600' },
-
   card: { backgroundColor: C.bgCard, borderRadius: 18, padding: 16, marginBottom: 12, shadowColor: C.shadow, shadowOpacity: 0.1, shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 2 },
   cardTop: { flexDirection: 'row', marginBottom: 12 },
   cardEmoji: { fontSize: 38, marginRight: 14 },
