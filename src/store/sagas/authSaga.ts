@@ -5,9 +5,14 @@ import { User } from '../../types';
 
 const USER_KEY = '@neighbour_user';
 
+function sanitize(input: string): string {
+  return input.replace(/[\r\n\t]/g, '').trim();
+}
+
 function* handleLogin(action: ReturnType<typeof loginRequest>) {
   try {
-    const { email, password } = action.payload;
+    const email = sanitize(action.payload.email);
+    const password = sanitize(action.payload.password);
     if (!email || !password) throw new Error('Invalid credentials');
     const user: User = { email, name: email.split('@')[0] };
     yield call([AsyncStorage, AsyncStorage.setItem], USER_KEY, JSON.stringify(user));
@@ -19,7 +24,9 @@ function* handleLogin(action: ReturnType<typeof loginRequest>) {
 
 function* handleSignUp(action: ReturnType<typeof signUpRequest>) {
   try {
-    const { name, email, password } = action.payload;
+    const name = sanitize(action.payload.name);
+    const email = sanitize(action.payload.email);
+    const password = sanitize(action.payload.password);
     if (!name || !email || !password) throw new Error('Invalid data');
     const user: User = { email, name };
     yield call([AsyncStorage, AsyncStorage.setItem], USER_KEY, JSON.stringify(user));

@@ -53,8 +53,14 @@ export default function ActivityDetailScreen({ route, navigation }: Props): Reac
     ]);
   };
 
+  const sanitize = (s: string) => s.replace(/[\r\n<>"'`]/g, ' ').trim();
+
   const handleShare = async () => {
-    await Share.share({ message: `Join me for ${activity.title} on ${activity.date} at ${activity.time}! 📍 ${activity.location}` });
+    const title = sanitize(activity.title);
+    const location = sanitize(activity.location);
+    await Share.share({
+      message: `Join me for ${title} on ${activity.date} at ${activity.time}! 📍 ${location}`,
+    });
   };
 
   const handleReport = () => {
