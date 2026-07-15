@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import {
@@ -108,12 +109,12 @@ function ChatsTabNavigator(): React.JSX.Element {
   );
 }
 
-interface TabIconProps { emoji: string; focused: boolean; badge?: number }
+interface TabIconProps { name: string; focused: boolean; badge?: number }
 
-function TabIcon({ emoji, focused, badge }: TabIconProps): React.JSX.Element {
+function TabIcon({ name, focused, badge }: TabIconProps): React.JSX.Element {
   return (
     <View style={tabStyles.wrap}>
-      <Text style={[tabStyles.emoji, { opacity: focused ? 1 : 0.45 }]}>{emoji}</Text>
+      <Icon name={name} size={24} color={focused ? '#004AC6' : '#8B92B8'} />
       {badge != null && badge > 0 && (
         <View style={tabStyles.badge}>
           <Text style={tabStyles.badgeText}>{badge > 9 ? '9+' : badge}</Text>
@@ -125,7 +126,6 @@ function TabIcon({ emoji, focused, badge }: TabIconProps): React.JSX.Element {
 
 const tabStyles = StyleSheet.create({
   wrap: { alignItems: 'center', justifyContent: 'center' },
-  emoji: { fontSize: 22 },
   badge: { position: 'absolute', top: -4, right: -8, backgroundColor: '#EF4444', borderRadius: 8, minWidth: 16, height: 16, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 3 },
   badgeText: { fontSize: 9, color: '#fff', fontWeight: '700' },
 });
@@ -151,7 +151,7 @@ export default function AppNavigator(): React.JSX.Element {
         component={HomeStackNavigator}
         options={{
           tabBarLabel: 'Home',
-          tabBarIcon: ({ focused }) => <TabIcon emoji="🏠" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon name="home" focused={focused} />,
         }}
       />
       <Tab.Screen
@@ -159,7 +159,7 @@ export default function AppNavigator(): React.JSX.Element {
         component={ActivitiesStackNavigator}
         options={{
           tabBarLabel: 'Activities',
-          tabBarIcon: ({ focused }) => <TabIcon emoji="⚡" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon name="lightning-bolt" focused={focused} />,
         }}
       />
       <Tab.Screen
@@ -176,7 +176,7 @@ export default function AppNavigator(): React.JSX.Element {
               shadowColor: '#2563EB', shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 2 },
               elevation: 6,
             }}>
-              <Text style={{ fontSize: 22, color: focused ? '#FFFFFF' : '#004AC6' }}>＋</Text>
+              <Icon name="plus" size={26} color={focused ? '#FFFFFF' : '#004AC6'} />
             </View>
           ),
         }}
@@ -186,7 +186,7 @@ export default function AppNavigator(): React.JSX.Element {
         component={ChatsTabNavigator}
         options={{
           tabBarLabel: 'Chats',
-          tabBarIcon: ({ focused }) => <TabIcon emoji="💬" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon name="chat" focused={focused} />,
         }}
       />
       <Tab.Screen
@@ -194,7 +194,7 @@ export default function AppNavigator(): React.JSX.Element {
         component={ProfileStackNavigator}
         options={{
           tabBarLabel: 'Profile',
-          tabBarIcon: ({ focused }) => <TabIcon emoji="👤" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon name="account" focused={focused} />,
         }}
       />
     </Tab.Navigator>

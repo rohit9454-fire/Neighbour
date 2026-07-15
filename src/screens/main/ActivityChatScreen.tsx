@@ -3,6 +3,7 @@ import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   TextInput, KeyboardAvoidingView, Platform, ListRenderItemInfo,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSelector, useDispatch } from 'react-redux';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -115,7 +116,7 @@ export default function ActivityChatScreen({ route, navigation }: Props): React.
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backText}>←</Text>
+          <Icon name="arrow-left" size={24} color={C.textPrimary} />
         </TouchableOpacity>
         <View style={styles.headerInfo}>
           <Text style={styles.headerTitle} numberOfLines={1}>{activityTitle}</Text>
@@ -123,14 +124,18 @@ export default function ActivityChatScreen({ route, navigation }: Props): React.
         </View>
         {pinnedMessages.length > 0 && (
           <TouchableOpacity onPress={() => setShowPinned(p => !p)}>
-            <Text style={styles.pinnedBtn}>📌 {pinnedMessages.length}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Icon name="pin" size={14} color={C.btnInactive} />
+              <Text style={styles.pinnedBtn}>{pinnedMessages.length}</Text>
+            </View>
           </TouchableOpacity>
         )}
       </View>
 
       {showPinned && pinnedMessages.length > 0 && (
         <View style={styles.pinnedBanner}>
-          <Text style={styles.pinnedBannerText}>📌 {pinnedMessages[0].text}</Text>
+          <Icon name="pin" size={14} color={C.btnActive} style={{ marginRight: 6 }} />
+          <Text style={styles.pinnedBannerText}>{pinnedMessages[0].text}</Text>
         </View>
       )}
 
@@ -152,8 +157,8 @@ export default function ActivityChatScreen({ route, navigation }: Props): React.
 
         <View style={styles.inputBar}>
           <TouchableOpacity style={styles.attachBtn}>
-            <Text style={styles.attachIcon}>📎</Text>
-          </TouchableOpacity>
+          <Icon name="paperclip" size={20} color={C.textSecondary} />
+        </TouchableOpacity>
           <TextInput
             style={styles.input}
             placeholder="Type a message..."
@@ -167,7 +172,7 @@ export default function ActivityChatScreen({ route, navigation }: Props): React.
             style={[styles.sendBtn, !text.trim() && styles.sendBtnDisabled]}
             onPress={handleSend}
             disabled={!text.trim()}>
-            <Text style={styles.sendIcon}>↑</Text>
+            <Icon name="send" size={18} color={text.trim() ? C.textWhite : C.textMuted} />
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -179,13 +184,12 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
 
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: C.border, gap: 12, backgroundColor: C.bgCard },
-  backText: { fontSize: 22, color: C.textPrimary },
   headerInfo: { flex: 1 },
   headerTitle: { fontSize: 15, fontWeight: '700', color: C.textPrimary },
   headerSub: { fontSize: 11, color: C.textMuted, marginTop: 1 },
   pinnedBtn: { fontSize: 13, color: C.btnInactive },
 
-  pinnedBanner: { backgroundColor: C.bgMuted, paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.border },
+  pinnedBanner: { backgroundColor: C.bgMuted, paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.border, flexDirection: 'row', alignItems: 'center' },
   pinnedBannerText: { fontSize: 12, color: C.btnActive, lineHeight: 18 },
 
   messagesList: { padding: 16, paddingBottom: 8 },
@@ -221,9 +225,7 @@ const styles = StyleSheet.create({
 
   inputBar: { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 12, paddingVertical: 10, borderTopWidth: 1, borderTopColor: C.border, gap: 8, backgroundColor: C.bgCard },
   attachBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: C.bgMuted, justifyContent: 'center', alignItems: 'center' },
-  attachIcon: { fontSize: 18 },
   input: { flex: 1, backgroundColor: C.bgInput, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, fontSize: 14, color: C.textPrimary, maxHeight: 100, borderWidth: 1, borderColor: C.border },
   sendBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: C.btnInactive, justifyContent: 'center', alignItems: 'center' },
   sendBtnDisabled: { backgroundColor: C.bgMuted },
-  sendIcon: { fontSize: 18, color: C.textWhite, fontWeight: '700' },
 });

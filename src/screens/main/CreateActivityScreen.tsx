@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useDispatch, useSelector } from 'react-redux';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -69,7 +70,7 @@ export default function CreateActivityScreen({ navigation }: Props): React.JSX.E
         </View>
 
         <TouchableOpacity style={styles.imagePicker}>
-          <Text style={styles.imagePickerEmoji}>📷</Text>
+          <Icon name="camera-plus-outline" size={32} color={C.textMuted} style={{ marginBottom: 8 }} />
           <Text style={styles.imagePickerText}>Add Cover Photo</Text>
           <Text style={styles.imagePickerSub}>Tap to upload from gallery</Text>
         </TouchableOpacity>
@@ -93,7 +94,7 @@ export default function CreateActivityScreen({ navigation }: Props): React.JSX.E
         <Text style={styles.label}>Location *</Text>
         <View style={styles.locationWrap}>
           <TextInput style={[styles.input, { flex: 1, marginBottom: 0 }]} placeholder="e.g. Community Sports Hall" placeholderTextColor={C.textMuted} value={location} onChangeText={setLocation} />
-          <TouchableOpacity style={styles.mapPickerBtn}><Text style={styles.mapPickerText}>📍</Text></TouchableOpacity>
+          <TouchableOpacity style={styles.mapPickerBtn}><Icon name="map-marker" size={22} color={C.btnInactive} /></TouchableOpacity>
         </View>
 
         <View style={styles.row}>
@@ -128,7 +129,8 @@ export default function CreateActivityScreen({ navigation }: Props): React.JSX.E
         </View>
 
         <TouchableOpacity style={styles.submitBtn} onPress={handleCreate} activeOpacity={0.85}>
-          <Text style={styles.submitText}>Create Activity →</Text>
+          <Text style={styles.submitText}>Create Activity </Text>
+          <Icon name="arrow-right" size={18} color={C.textWhite} />
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -143,7 +145,6 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 17, fontWeight: '700', color: C.textPrimary },
   postText: { fontSize: 15, color: C.btnInactive, fontWeight: '700' },
   imagePicker: { backgroundColor: C.bgCard, borderRadius: 16, height: 140, justifyContent: 'center', alignItems: 'center', marginBottom: 24, borderWidth: 1, borderColor: C.border, borderStyle: 'dashed' },
-  imagePickerEmoji: { fontSize: 32, marginBottom: 8 },
   imagePickerText: { fontSize: 14, fontWeight: '600', color: C.textMuted },
   imagePickerSub: { fontSize: 12, color: C.textMuted, marginTop: 4 },
   label: { fontSize: 13, fontWeight: '600', color: C.textSecondary, marginBottom: 8, marginTop: 4 },
@@ -157,7 +158,6 @@ const styles = StyleSheet.create({
   chipTextActive: { color: C.btnActive, fontWeight: '600' },
   locationWrap: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 },
   mapPickerBtn: { width: 50, height: 50, backgroundColor: C.bgCard, borderRadius: 14, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: C.border },
-  mapPickerText: { fontSize: 20 },
   row: { flexDirection: 'row', gap: 12 },
   halfField: { flex: 1 },
   visibilityRow: { flexDirection: 'row', gap: 10, marginBottom: 24 },
@@ -165,6 +165,6 @@ const styles = StyleSheet.create({
   visibilityChipActive: { backgroundColor: C.bgMuted, borderColor: C.btnActive },
   visibilityText: { fontSize: 12, color: C.textMuted, fontWeight: '500' },
   visibilityTextActive: { color: C.btnActive, fontWeight: '700' },
-  submitBtn: { backgroundColor: C.btnInactive, borderRadius: 16, height: 56, justifyContent: 'center', alignItems: 'center' },
+  submitBtn: { backgroundColor: C.btnInactive, borderRadius: 16, height: 56, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6 },
   submitText: { fontSize: 16, fontWeight: '700', color: C.textWhite },
 });

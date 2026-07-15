@@ -3,6 +3,7 @@ import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   RefreshControl, ListRenderItemInfo,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSelector, useDispatch } from 'react-redux';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -51,11 +52,14 @@ function ActivityCard({ item, onPress, onJoin, joined }: {
         <Text style={styles.cardEmoji}>{item.emoji}</Text>
         <View style={styles.cardInfo}>
           <Text style={styles.cardTitle} numberOfLines={1}>{item.title}</Text>
-          <Text style={styles.cardMeta}>📍 {item.location}</Text>
-          <Text style={styles.cardMeta}>📅 {item.date} · {item.time}</Text>
-          <Text style={styles.cardMeta}>⏱ {item.duration}</Text>
+        <Text style={styles.cardMeta}><Icon name="map-marker" size={12} color={C.textSecondary} /> {item.location}</Text>
+          <Text style={styles.cardMeta}><Icon name="calendar" size={12} color={C.textSecondary} /> {item.date} · {item.time}</Text>
+          <Text style={styles.cardMeta}><Icon name="clock-outline" size={12} color={C.textSecondary} /> {item.duration}</Text>
           <View style={styles.cardFooterRow}>
-            <Text style={styles.hostText}>👤 {item.host}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Icon name="account" size={12} color={C.textMuted} />
+              <Text style={styles.hostText}>{item.host}</Text>
+            </View>
             <Text style={styles.slotText}>{item.participants.length}/{item.maxParticipants} joined</Text>
           </View>
         </View>
@@ -114,7 +118,7 @@ export default function HomeScreen({ navigation }: Props): React.JSX.Element {
           </Text>
         </View>
         <TouchableOpacity style={styles.notifBtn} onPress={() => navigation.navigate('Notifications')}>
-          <Text style={styles.notifIcon}>🔔</Text>
+          <Icon name="bell" size={20} color={C.textPrimary} />
           {unreadCount > 0 && (
             <View style={styles.badge}><Text style={styles.badgeText}>{unreadCount}</Text></View>
           )}
@@ -122,7 +126,7 @@ export default function HomeScreen({ navigation }: Props): React.JSX.Element {
       </View>
 
       <View style={styles.heroBanner}>
-        <Text style={styles.heroEmoji}>🏘️</Text>
+        <Icon name="home-group" size={40} color="#93C5FD" style={{ marginRight: 12 }} />
         <View style={styles.heroText}>
           <Text style={styles.heroTitle}>Your Neighbourhood</Text>
           <Text style={styles.heroSub}>
@@ -131,12 +135,16 @@ export default function HomeScreen({ navigation }: Props): React.JSX.Element {
         </View>
         <TouchableOpacity style={styles.heroBtn}
           onPress={() => navigation.navigate('ActivityDetail', { activityId: activities[0]?.id })}>
-          <Text style={styles.heroBtnText}>Explore →</Text>
+          <Text style={styles.heroBtnText}>Explore </Text>
+          <Icon name="arrow-right" size={14} color={C.textWhite} />
         </TouchableOpacity>
       </View>
 
       <View style={styles.weatherCard}>
-        <Text style={styles.weatherTitle}>☀️ Today's Weather</Text>
+        <View style={styles.weatherTitleRow}>
+          <Icon name="weather-sunny" size={18} color="#F59E0B" style={{ marginRight: 6 }} />
+          <Text style={styles.weatherTitle}>Today's Weather</Text>
+        </View>
         <View style={styles.weatherRow}>
           <View style={styles.weatherItem}><Text style={styles.weatherVal}>28°C</Text><Text style={styles.weatherLbl}>Now</Text></View>
           <View style={styles.weatherItem}><Text style={styles.weatherVal}>32°C</Text><Text style={styles.weatherLbl}>Afternoon</Text></View>
@@ -223,7 +231,6 @@ const styles = StyleSheet.create({
   greeting: { fontSize: 20, fontWeight: '700', color: C.textPrimary },
   locality: { fontSize: 12, color: C.textMuted, marginTop: 2 },
   notifBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: C.bgCard, justifyContent: 'center', alignItems: 'center', shadowColor: C.shadow, shadowOpacity: 0.15, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
-  notifIcon: { fontSize: 18 },
   badge: { position: 'absolute', top: 4, right: 4, backgroundColor: C.badge, borderRadius: 8, minWidth: 16, height: 16, justifyContent: 'center', alignItems: 'center' },
   badgeText: { fontSize: 9, color: C.textWhite, fontWeight: '700' },
 
@@ -232,11 +239,12 @@ const styles = StyleSheet.create({
   heroText: { flex: 1 },
   heroTitle: { fontSize: 16, fontWeight: '700', color: C.textWhite },
   heroSub: { fontSize: 12, color: '#93C5FD', marginTop: 2 },
-  heroBtn: { backgroundColor: C.btnInactive, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8 },
+  heroBtn: { backgroundColor: C.btnInactive, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 4 },
   heroBtnText: { fontSize: 12, color: C.textWhite, fontWeight: '600' },
 
   weatherCard: { marginHorizontal: 20, marginBottom: 16, backgroundColor: C.bgCard, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: C.border, shadowColor: C.shadow, shadowOpacity: 0.1, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
-  weatherTitle: { fontSize: 13, fontWeight: '600', color: C.textSecondary, marginBottom: 12 },
+  weatherTitleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  weatherTitle: { fontSize: 13, fontWeight: '600', color: C.textSecondary },
   weatherRow: { flexDirection: 'row', justifyContent: 'space-between' },
   weatherItem: { alignItems: 'center' },
   weatherVal: { fontSize: 14, fontWeight: '700', color: C.textPrimary },

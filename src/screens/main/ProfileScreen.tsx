@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Switch } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useDispatch, useSelector } from 'react-redux';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootState } from '../../store';
@@ -33,11 +34,14 @@ export default function ProfileScreen(): React.JSX.Element {
               <Text style={styles.avatarText}>{user?.name?.[0]?.toUpperCase() ?? 'U'}</Text>
             </View>
             <View style={styles.cameraBtn}>
-              <Text style={styles.cameraIcon}>📷</Text>
+              <Icon name="camera" size={13} color={C.textWhite} />
             </View>
           </View>
           <Text style={styles.name}>{user?.name ?? 'Neighbour'}</Text>
-          <Text style={styles.society}>🏘️ {user?.society ?? 'Green Valley'} · {user?.sector ?? 'Sector 45'}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 }}>
+            <Icon name="home-group" size={14} color={C.textSecondary} />
+            <Text style={styles.society}>{user?.society ?? 'Green Valley'} · {user?.sector ?? 'Sector 45'}</Text>
+          </View>
           <Text style={styles.email}>{user?.email}</Text>
         </View>
 
@@ -73,7 +77,7 @@ export default function ProfileScreen(): React.JSX.Element {
           <Text style={styles.sectionTitle}>SETTINGS</Text>
           <View style={styles.menuCard}>
             <View style={styles.menuItemToggle}>
-              <Text style={styles.menuIcon}>🔔</Text>
+              <Icon name="bell-outline" size={20} color={C.textSecondary} style={styles.menuIcon} />
               <Text style={styles.menuText}>Notifications</Text>
               <Switch value={notifEnabled} onValueChange={setNotifEnabled}
                 trackColor={{ false: C.border, true: C.bgMuted }}
@@ -81,7 +85,7 @@ export default function ProfileScreen(): React.JSX.Element {
             </View>
             <View style={styles.menuDivider} />
             <View style={styles.menuItemToggle}>
-              <Text style={styles.menuIcon}>📍</Text>
+              <Icon name="map-marker-outline" size={20} color={C.textSecondary} style={styles.menuIcon} />
               <Text style={styles.menuText}>Location Services</Text>
               <Switch value={locationEnabled} onValueChange={setLocationEnabled}
                 trackColor={{ false: C.border, true: C.bgMuted }}
@@ -89,21 +93,21 @@ export default function ProfileScreen(): React.JSX.Element {
             </View>
             <View style={styles.menuDivider} />
             <TouchableOpacity style={styles.menuItem} onPress={() => Alert.alert('Privacy', 'Your data is safe.')}>
-              <Text style={styles.menuIcon}>🔒</Text>
+              <Icon name="lock-outline" size={20} color={C.textSecondary} style={styles.menuIcon} />
               <Text style={styles.menuText}>Privacy</Text>
-              <Text style={styles.menuArrow}>›</Text>
+              <Icon name="chevron-right" size={20} color={C.textMuted} />
             </TouchableOpacity>
             <View style={styles.menuDivider} />
             <TouchableOpacity style={styles.menuItem} onPress={() => Alert.alert('Blocked Users', 'No blocked users.')}>
-              <Text style={styles.menuIcon}>🚫</Text>
+              <Icon name="account-cancel-outline" size={20} color={C.textSecondary} style={styles.menuIcon} />
               <Text style={styles.menuText}>Blocked Users</Text>
-              <Text style={styles.menuArrow}>›</Text>
+              <Icon name="chevron-right" size={20} color={C.textMuted} />
             </TouchableOpacity>
             <View style={styles.menuDivider} />
             <TouchableOpacity style={styles.menuItem} onPress={() => Alert.alert('Report Problem', 'Thank you! Our team will look into it.')}>
-              <Text style={styles.menuIcon}>⚑</Text>
+              <Icon name="flag-outline" size={20} color={C.textSecondary} style={styles.menuIcon} />
               <Text style={styles.menuText}>Report a Problem</Text>
-              <Text style={styles.menuArrow}>›</Text>
+              <Icon name="chevron-right" size={20} color={C.textMuted} />
             </TouchableOpacity>
           </View>
         </View>
@@ -127,9 +131,8 @@ const styles = StyleSheet.create({
   avatar: { width: 88, height: 88, borderRadius: 44, backgroundColor: C.btnActive, borderWidth: 3, borderColor: C.btnInactive, justifyContent: 'center', alignItems: 'center' },
   avatarText: { fontSize: 34, fontWeight: '700', color: C.textWhite },
   cameraBtn: { position: 'absolute', bottom: 0, right: 0, width: 28, height: 28, borderRadius: 14, backgroundColor: C.btnInactive, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: C.bg },
-  cameraIcon: { fontSize: 13 },
   name: { fontSize: 22, fontWeight: '700', color: C.textPrimary, marginBottom: 4 },
-  society: { fontSize: 13, color: C.textSecondary, marginBottom: 4 },
+  society: { fontSize: 13, color: C.textSecondary },
   email: { fontSize: 12, color: C.textMuted },
 
   statsRow: { flexDirection: 'row', backgroundColor: C.bgCard, marginHorizontal: 20, borderRadius: 16, paddingVertical: 16, marginBottom: 24, shadowColor: C.shadow, shadowOpacity: 0.08, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
@@ -148,9 +151,8 @@ const styles = StyleSheet.create({
   menuCard: { backgroundColor: C.bgCard, borderRadius: 16, overflow: 'hidden', shadowColor: C.shadow, shadowOpacity: 0.08, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
   menuItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 15 },
   menuItemToggle: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 },
-  menuIcon: { fontSize: 18, marginRight: 12 },
+  menuIcon: { marginRight: 12 },
   menuText: { flex: 1, fontSize: 15, color: C.textPrimary },
-  menuArrow: { fontSize: 20, color: C.textMuted },
   menuDivider: { height: 1, backgroundColor: C.divider, marginLeft: 48 },
 
   logoutBtn: { marginHorizontal: 20, backgroundColor: C.dangerBg, borderRadius: 16, paddingVertical: 16, alignItems: 'center', borderWidth: 1, borderColor: '#FECACA', marginBottom: 12 },

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, ListRenderItemInfo } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSelector, useDispatch } from 'react-redux';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -58,9 +59,9 @@ export default function MyActivitiesScreen({ navigation }: Props): React.JSX.Ele
         <Text style={styles.cardEmoji}>{item.emoji}</Text>
         <View style={styles.cardInfo}>
           <Text style={styles.cardTitle} numberOfLines={1}>{item.title}</Text>
-          <Text style={styles.cardMeta}>📅 {item.date} · {item.time}</Text>
-          <Text style={styles.cardMeta}>📍 {item.location}</Text>
-          <Text style={styles.cardMeta}>👥 {item.participants.length}/{item.maxParticipants} participants</Text>
+          <Text style={styles.cardMeta}><Icon name="calendar" size={12} color={C.textSecondary} /> {item.date} · {item.time}</Text>
+          <Text style={styles.cardMeta}><Icon name="map-marker" size={12} color={C.textSecondary} /> {item.location}</Text>
+          <Text style={styles.cardMeta}><Icon name="account-group" size={12} color={C.textSecondary} /> {item.participants.length}/{item.maxParticipants} participants</Text>
         </View>
         <View style={[styles.statusDot, { backgroundColor: STATUS_COLOR[item.status] ?? C.textMuted }]} />
       </View>
@@ -84,6 +85,7 @@ export default function MyActivitiesScreen({ navigation }: Props): React.JSX.Ele
           </TouchableOpacity>
         )}
         <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('ActivityChat', { activityId: item.id, activityTitle: item.title })}>
+          <Icon name="chat-outline" size={14} color={C.btnInactive} style={{ marginRight: 4 }} />
           <Text style={[styles.actionBtnText, { color: C.btnInactive }]}>Chat</Text>
         </TouchableOpacity>
       </View>
@@ -94,7 +96,7 @@ export default function MyActivitiesScreen({ navigation }: Props): React.JSX.Ele
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backText}>←</Text>
+          <Icon name="arrow-left" size={24} color={C.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>My Activities</Text>
         <View style={{ width: 32 }} />
@@ -112,7 +114,7 @@ export default function MyActivitiesScreen({ navigation }: Props): React.JSX.Ele
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text style={styles.emptyEmoji}>📭</Text>
+            <Icon name="inbox-remove-outline" size={48} color={C.textMuted} />
             <Text style={styles.emptyText}>No {activeTab.toLowerCase()} activities</Text>
           </View>
         }
@@ -124,7 +126,6 @@ export default function MyActivitiesScreen({ navigation }: Props): React.JSX.Ele
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14 },
-  backText: { fontSize: 22, color: C.textPrimary },
   headerTitle: { fontSize: 18, fontWeight: '700', color: C.textPrimary },
   tabsRow: { flexDirection: 'row', paddingHorizontal: 16, marginBottom: 8, gap: 8 },
   tab: { flex: 1, paddingVertical: 9, borderRadius: 12, backgroundColor: C.bgCard, alignItems: 'center', borderWidth: 1, borderColor: C.border },
@@ -139,9 +140,8 @@ const styles = StyleSheet.create({
   cardMeta: { fontSize: 12, color: C.textSecondary, marginTop: 2 },
   statusDot: { width: 10, height: 10, borderRadius: 5, marginTop: 4 },
   cardActions: { flexDirection: 'row', gap: 8, paddingTop: 10, borderTopWidth: 1, borderTopColor: C.divider },
-  actionBtn: { backgroundColor: C.bgMuted, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 },
+  actionBtn: { backgroundColor: C.bgMuted, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8, flexDirection: 'row', alignItems: 'center' },
   actionBtnText: { fontSize: 12, color: C.textSecondary, fontWeight: '600' },
-  empty: { alignItems: 'center', paddingTop: 60 },
-  emptyEmoji: { fontSize: 48, marginBottom: 12 },
+  empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
   emptyText: { fontSize: 15, color: C.textMuted },
 });

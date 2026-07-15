@@ -3,6 +3,7 @@ import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   TextInput, RefreshControl, ListRenderItemInfo,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSelector, useDispatch } from 'react-redux';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -79,9 +80,9 @@ export default function ActivitiesScreen({ navigation }: Props): React.JSX.Eleme
           <Text style={styles.cardEmoji}>{item.emoji}</Text>
           <View style={styles.cardMid}>
             <Text style={styles.cardTitle} numberOfLines={1}>{item.title}</Text>
-            <Text style={styles.cardMeta}>📍 {item.location}</Text>
-            <Text style={styles.cardMeta}>📅 {item.date} · {item.time} · ⏱ {item.duration}</Text>
-            <Text style={styles.cardMeta}>👤 {item.host}</Text>
+          <Text style={styles.cardMeta}><Icon name="map-marker" size={12} color={C.textSecondary} /> {item.location}</Text>
+            <Text style={styles.cardMeta}><Icon name="calendar" size={12} color={C.textSecondary} /> {item.date} · {item.time} · <Icon name="clock-outline" size={12} color={C.textSecondary} /> {item.duration}</Text>
+            <Text style={styles.cardMeta}><Icon name="account" size={12} color={C.textSecondary} /> {item.host}</Text>
           </View>
         </View>
         <View style={styles.cardBottom}>
@@ -107,9 +108,13 @@ export default function ActivitiesScreen({ navigation }: Props): React.JSX.Eleme
       </View>
 
       <View style={styles.searchWrap}>
-        <Text style={styles.searchIcon}>🔍</Text>
+        <Icon name="magnify" size={18} color={C.textMuted} style={{ marginRight: 8 }} />
         <TextInput style={styles.searchInput} placeholder="Search activities..." placeholderTextColor={C.textMuted} value={search} onChangeText={setSearch} />
-        {search.length > 0 && <TouchableOpacity onPress={() => setSearch('')}><Text style={styles.clearSearch}>✕</Text></TouchableOpacity>}
+        {search.length > 0 && (
+          <TouchableOpacity onPress={() => setSearch('')}>
+            <Icon name="close-circle" size={18} color={C.textMuted} />
+          </TouchableOpacity>
+        )}
       </View>
 
       <FlatList horizontal data={FILTERS} keyExtractor={f => f} showsHorizontalScrollIndicator={false}
@@ -150,9 +155,7 @@ const styles = StyleSheet.create({
   myBtnText: { fontSize: 12, color: C.btnActive, fontWeight: '600' },
 
   searchWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.bgCard, borderRadius: 14, marginHorizontal: 16, marginBottom: 12, paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, borderColor: C.border },
-  searchIcon: { fontSize: 16, marginRight: 8 },
   searchInput: { flex: 1, fontSize: 14, color: C.textPrimary },
-  clearSearch: { fontSize: 14, color: C.textMuted, paddingLeft: 8 },
 
   filterList: { paddingHorizontal: 16, paddingBottom: 8, gap: 8 },
   filterChip: { borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7, backgroundColor: C.bgCard, borderWidth: 1, borderColor: C.border },

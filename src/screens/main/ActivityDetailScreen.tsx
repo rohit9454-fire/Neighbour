@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, Share } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSelector, useDispatch } from 'react-redux';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -57,17 +58,17 @@ export default function ActivityDetailScreen({ route, navigation }: Props): Reac
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
           <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-            <Text style={styles.backIcon}>←</Text>
+            <Icon name="arrow-left" size={20} color={C.textWhite} />
           </TouchableOpacity>
           <View style={styles.heroActions}>
             <TouchableOpacity style={styles.iconBtn} onPress={() => setBookmarked(b => !b)}>
-              <Text style={styles.iconBtnText}>{bookmarked ? '🔖' : '🏷️'}</Text>
+              <Icon name={bookmarked ? 'bookmark' : 'bookmark-outline'} size={18} color={C.textWhite} />
             </TouchableOpacity>
             <TouchableOpacity style={styles.iconBtn} onPress={handleShare}>
-              <Text style={styles.iconBtnText}>↗️</Text>
+              <Icon name="share-variant" size={18} color={C.textWhite} />
             </TouchableOpacity>
             <TouchableOpacity style={styles.iconBtn} onPress={handleReport}>
-              <Text style={styles.iconBtnText}>⚑</Text>
+              <Icon name="flag-outline" size={18} color={C.textWhite} />
             </TouchableOpacity>
           </View>
           <View style={styles.heroContent}>
@@ -82,10 +83,10 @@ export default function ActivityDetailScreen({ route, navigation }: Props): Reac
 
         <View style={styles.body}>
           <View style={styles.infoGrid}>
-            <View style={styles.infoItem}><Text style={styles.infoIcon}>📅</Text><Text style={styles.infoVal}>{activity.date}</Text><Text style={styles.infoLbl}>Date</Text></View>
-            <View style={styles.infoItem}><Text style={styles.infoIcon}>🕐</Text><Text style={styles.infoVal}>{activity.time}</Text><Text style={styles.infoLbl}>Time</Text></View>
-            <View style={styles.infoItem}><Text style={styles.infoIcon}>⏱</Text><Text style={styles.infoVal}>{activity.duration}</Text><Text style={styles.infoLbl}>Duration</Text></View>
-            <View style={styles.infoItem}><Text style={styles.infoIcon}>👁</Text><Text style={styles.infoVal}>{activity.visibility}</Text><Text style={styles.infoLbl}>Visibility</Text></View>
+            <View style={styles.infoItem}><Icon name="calendar" size={20} color={C.btnInactive} /><Text style={styles.infoVal}>{activity.date}</Text><Text style={styles.infoLbl}>Date</Text></View>
+            <View style={styles.infoItem}><Icon name="clock-outline" size={20} color={C.btnInactive} /><Text style={styles.infoVal}>{activity.time}</Text><Text style={styles.infoLbl}>Time</Text></View>
+            <View style={styles.infoItem}><Icon name="timer-outline" size={20} color={C.btnInactive} /><Text style={styles.infoVal}>{activity.duration}</Text><Text style={styles.infoLbl}>Duration</Text></View>
+            <View style={styles.infoItem}><Icon name="eye-outline" size={20} color={C.btnInactive} /><Text style={styles.infoVal}>{activity.visibility}</Text><Text style={styles.infoLbl}>Visibility</Text></View>
           </View>
 
           <View style={styles.section}>
@@ -96,11 +97,12 @@ export default function ActivityDetailScreen({ route, navigation }: Props): Reac
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Location</Text>
             <View style={styles.locationRow}>
-              <Text style={styles.locationText}>📍 {activity.location}</Text>
+              <Icon name="map-marker" size={16} color={C.btnInactive} style={{ marginRight: 6 }} />
+              <Text style={styles.locationText}>{activity.location}</Text>
               {activity.distance && <Text style={styles.distanceBadge}>{activity.distance}</Text>}
             </View>
             <View style={styles.mapPreview}>
-              <Text style={styles.mapEmoji}>🗺️</Text>
+              <Icon name="map" size={36} color={C.textMuted} />
               <Text style={styles.mapText}>Map Preview</Text>
               <Text style={styles.mapSub}>{activity.location}</Text>
             </View>
@@ -154,7 +156,8 @@ export default function ActivityDetailScreen({ route, navigation }: Props): Reac
 
           <TouchableOpacity style={styles.chatBtn}
             onPress={() => navigation.navigate('ActivityChat', { activityId, activityTitle: activity.title })}>
-            <Text style={styles.chatBtnText}>💬 Open Activity Chat</Text>
+            <Icon name="chat" size={18} color={C.btnActive} style={{ marginRight: 8 }} />
+            <Text style={styles.chatBtnText}>Open Activity Chat</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -180,10 +183,8 @@ const styles = StyleSheet.create({
 
   hero: { backgroundColor: C.btnActive, paddingTop: 56, paddingBottom: 28, paddingHorizontal: 20, position: 'relative' },
   backBtn: { position: 'absolute', top: 16, left: 16, width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', zIndex: 10 },
-  backIcon: { fontSize: 18, color: C.textWhite },
   heroActions: { position: 'absolute', top: 16, right: 16, flexDirection: 'row', gap: 8, zIndex: 10 },
   iconBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
-  iconBtnText: { fontSize: 16 },
   heroContent: { alignItems: 'center', marginTop: 8 },
   heroEmoji: { fontSize: 64, marginBottom: 12 },
   heroCategoryBadge: { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 5, marginBottom: 10 },
@@ -194,20 +195,18 @@ const styles = StyleSheet.create({
   body: { padding: 20 },
   infoGrid: { flexDirection: 'row', backgroundColor: C.bgCard, borderRadius: 16, padding: 16, marginBottom: 20, justifyContent: 'space-between', shadowColor: C.shadow, shadowOpacity: 0.08, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
   infoItem: { alignItems: 'center', flex: 1 },
-  infoIcon: { fontSize: 18, marginBottom: 4 },
-  infoVal: { fontSize: 12, fontWeight: '700', color: C.textPrimary, textAlign: 'center' },
+  infoVal: { fontSize: 12, fontWeight: '700', color: C.textPrimary, textAlign: 'center', marginTop: 4 },
   infoLbl: { fontSize: 10, color: C.textMuted, marginTop: 2 },
 
   section: { marginBottom: 24 },
   sectionTitle: { fontSize: 15, fontWeight: '700', color: C.textPrimary, marginBottom: 10 },
   description: { fontSize: 14, color: C.textSecondary, lineHeight: 22 },
 
-  locationRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+  locationRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
   locationText: { fontSize: 14, color: C.textSecondary, flex: 1 },
   distanceBadge: { backgroundColor: C.bgMuted, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, fontSize: 12, color: C.btnActive, fontWeight: '600' },
   mapPreview: { backgroundColor: C.bgCard, borderRadius: 16, height: 140, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: C.border },
-  mapEmoji: { fontSize: 36, marginBottom: 8 },
-  mapText: { fontSize: 14, fontWeight: '600', color: C.textMuted },
+  mapText: { fontSize: 14, fontWeight: '600', color: C.textMuted, marginTop: 8 },
   mapSub: { fontSize: 12, color: C.textMuted, marginTop: 4 },
 
   organizerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
@@ -230,7 +229,7 @@ const styles = StyleSheet.create({
   rulesCard: { backgroundColor: C.bgCard, borderRadius: 14, padding: 14, borderLeftWidth: 3, borderLeftColor: C.btnInactive },
   rulesText: { fontSize: 13, color: C.textSecondary, lineHeight: 20 },
 
-  chatBtn: { backgroundColor: C.bgMuted, borderRadius: 14, padding: 16, alignItems: 'center', marginBottom: 80, borderWidth: 1, borderColor: C.border },
+  chatBtn: { backgroundColor: C.bgMuted, borderRadius: 14, padding: 16, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 80, borderWidth: 1, borderColor: C.border },
   chatBtnText: { fontSize: 14, color: C.btnActive, fontWeight: '600' },
 
   bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 20, backgroundColor: C.bg, borderTopWidth: 1, borderTopColor: C.border },
