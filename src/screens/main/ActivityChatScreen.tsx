@@ -157,8 +157,8 @@ export default function ActivityChatScreen({ route, navigation }: Props): React.
 
         <View style={styles.inputBar}>
           <TouchableOpacity style={styles.attachBtn}>
-          <Icon name="paperclip" size={20} color={C.textSecondary} />
-        </TouchableOpacity>
+            <Icon name="paperclip" size={20} color={C.textSecondary} />
+          </TouchableOpacity>
           <TextInput
             style={styles.input}
             placeholder="Type a message..."

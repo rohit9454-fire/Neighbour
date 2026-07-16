@@ -141,10 +141,10 @@ export default function AppNavigator(): React.JSX.Element {
           backgroundColor: '#FFFFFF',
           borderTopColor: '#E8EAFF',
           height: 64,
-          paddingBottom: 10,
-          paddingTop: 6,
+          paddingBottom: 5,
+          paddingTop: 5,
         },
-        tabBarLabelStyle: { fontSize: 10, fontWeight: '600' },
+        tabBarLabelStyle: { fontSize: 10, fontWeight: '600', },
       }}>
       <Tab.Screen
         name="Home"
@@ -170,9 +170,9 @@ export default function AppNavigator(): React.JSX.Element {
           tabBarIcon: ({ focused }) => (
             <View style={{
               width: 46, height: 46, borderRadius: 23,
-              backgroundColor: focused ? '#004AC6' : '#EEEFFF',
+              backgroundColor: focused ? '#004AC6' : '#e5f0f5ff',
               justifyContent: 'center', alignItems: 'center',
-              marginBottom: 4,
+              marginBottom: 35,
               shadowColor: '#2563EB', shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 2 },
               elevation: 6,
             }}>

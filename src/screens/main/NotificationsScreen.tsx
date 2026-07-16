@@ -72,7 +72,7 @@ export default function NotificationsScreen({ navigation }: Props): React.JSX.El
 
       <FlatList
         data={sections}
-        keyExtractor={s => s}
+        keyExtractor={(s, index) => `${s + index}`}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 40 }}
         renderItem={({ item: section }) => (
