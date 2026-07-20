@@ -41,19 +41,24 @@ const activitiesSlice = createSlice({
       state.refreshing = true;
       state.error = null;
     },
-    joinActivity: (state, action: PayloadAction<{ activityId: string; userName: string }>) => {
+    joinActivity: (state, action: PayloadAction<{ activityId: string; userId: string; userName: string }>) => {
       const activity = state.activities.find(a => a.id === action.payload.activityId);
-      if (activity && !activity.participants.includes(action.payload.userName)) {
-        activity.participants.push(action.payload.userName);
+      if (activity && !activity.participants.find(p => p.userId === action.payload.userId)) {
+        activity.participants.push({
+          activityId: action.payload.activityId,
+          userId: action.payload.userId,
+          joinedAt: new Date().toISOString(),
+          user: { id: action.payload.userId, name: action.payload.userName, avatarUrl: null },
+        });
       }
       if (!state.myJoined.includes(action.payload.activityId)) {
         state.myJoined.push(action.payload.activityId);
       }
     },
-    leaveActivity: (state, action: PayloadAction<{ activityId: string; userName: string }>) => {
+    leaveActivity: (state, action: PayloadAction<{ activityId: string; userId: string }>) => {
       const activity = state.activities.find(a => a.id === action.payload.activityId);
       if (activity) {
-        activity.participants = activity.participants.filter(p => p !== action.payload.userName);
+        activity.participants = activity.participants.filter(p => p.userId !== action.payload.userId);
       }
       state.myJoined = state.myJoined.filter(id => id !== action.payload.activityId);
     },

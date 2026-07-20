@@ -50,8 +50,9 @@ export default function CreateActivityScreen({ navigation }: Props): React.JSX.E
       description: description.trim(), location: location.trim(),
       date: date.trim(), time: time.trim(), duration: duration.trim() || '1 hr',
       maxParticipants: parseInt(maxParticipants, 10), participants: [],
-      host: user?.name ?? 'You', emoji: CATEGORY_EMOJIS[category],
-      visibility, status: 'upcoming', createdAt: new Date().toISOString(), distance: '0.0 km',
+      hostId: user?.id ?? '', host: { id: user?.id ?? '', name: user?.name ?? 'You', avatarUrl: null },
+      emoji: CATEGORY_EMOJIS[category],
+      visibility, status: 'upcoming', createdAt: new Date().toISOString(), distance: 0,
     }));
     Alert.alert('Activity Created!', 'Your activity is now live.', [{ text: 'OK', onPress: () => navigation.goBack() }]);
   };

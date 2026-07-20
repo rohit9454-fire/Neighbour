@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   RefreshControl, ListRenderItemInfo,
@@ -9,7 +9,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootState } from '../../store';
 import { HomeStackParamList, Activity } from '../../types';
-import { selectAllActivities, joinActivity } from '../../store/slices/activitiesSlice';
+import { selectAllActivities, joinActivity, fetchActivitiesRequest, fetchActivitiesRefresh } from '../../store/slices/activitiesSlice';
 import { selectUnreadCount } from '../../store/slices/notificationsSlice';
 import { C } from '../../theme';
 
@@ -58,7 +58,7 @@ function ActivityCard({ item, onPress, onJoin, joined }: {
           <View style={styles.cardFooterRow}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
               <Icon name="account" size={12} color={C.textMuted} />
-              <Text style={styles.hostText}>{item.host}</Text>
+              <Text style={styles.hostText}>{item.host.name}</Text>
             </View>
             <Text style={styles.slotText}>{item.participants.length}/{item.maxParticipants} joined</Text>
           </View>
@@ -88,17 +88,21 @@ export default function HomeScreen({ navigation }: Props): React.JSX.Element {
   const activities = useSelector(selectAllActivities);
   const unreadCount = useSelector(selectUnreadCount);
   const myJoinedIds = useSelector((state: RootState) => state.activities.myJoined);
+  const loading = useSelector((state: RootState) => state.activities.loading);
+  const refreshingStore = useSelector((state: RootState) => state.activities.refreshing);
   const [refreshing, setRefreshing] = useState(false);
-  const [loading] = useState(false);
+
+  useEffect(() => {
+    dispatch(fetchActivitiesRequest());
+  }, [dispatch]);
 
   const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1200);
-  }, []);
+    dispatch(fetchActivitiesRefresh());
+  }, [dispatch]);
 
   const handleJoin = (activity: Activity) => {
     if (!user) return;
-    dispatch(joinActivity({ activityId: activity.id, userName: user.name }));
+    dispatch(joinActivity({ activityId: activity.id, userId: user.id ?? '', userName: user.name }));
   };
 
   const getGreeting = () => {
@@ -200,7 +204,7 @@ export default function HomeScreen({ navigation }: Props): React.JSX.Element {
           </View>
         )}
         contentContainerStyle={{ paddingBottom: 100 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.btnActive} />}
+        refreshControl={<RefreshControl refreshing={refreshing || refreshingStore} onRefresh={onRefresh} tintColor={C.btnActive} />}
         renderItem={({ item }: ListRenderItemInfo<Activity>) => (
           <ActivityCard
             item={item}

@@ -31,27 +31,42 @@ export type ActivityVisibility = 'Public' | 'Private' | 'Society Only';
 
 export type ActivityStatus = 'upcoming' | 'completed' | 'cancelled';
 
+export interface ActivityParticipant {
+  activityId: string;
+  userId: string;
+  joinedAt: string;
+  user: { id: string; name: string; avatarUrl: string | null };
+}
+
+export interface ActivityHost {
+  id: string;
+  name: string;
+  avatarUrl: string | null;
+}
+
 export interface Activity {
   id: string;
   title: string;
   category: ActivityCategory;
   description: string;
   location: string;
-  date: string;
+  date: string;         // ISO string from API e.g. "2026-07-20T00:00:00.000Z"
   time: string;
   duration: string;
   maxParticipants: number;
-  participants: string[];
-  host: string;
-  hostAvatar?: string;
+  participants: ActivityParticipant[];
+  hostId: string;
+  host: ActivityHost;
   image?: string;
   emoji: string;
   visibility: ActivityVisibility;
   status: ActivityStatus;
   createdAt: string;
-  weather?: string;
+  updatedAt?: string;
+  weather?: string | null;
   rules?: string;
-  distance?: string;
+  distance?: number;
+  society?: string | null;
 }
 
 export interface Event {

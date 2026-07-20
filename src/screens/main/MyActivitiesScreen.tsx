@@ -35,7 +35,7 @@ export default function MyActivitiesScreen({ navigation }: Props): React.JSX.Ele
   const handleLeave = (activity: Activity) => {
     Alert.alert('Leave Activity', `Leave "${activity.title}"?`, [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Leave', style: 'destructive', onPress: () => user && dispatch(leaveActivity({ activityId: activity.id, userName: user.name })) },
+      { text: 'Leave', style: 'destructive', onPress: () => user && dispatch(leaveActivity({ activityId: activity.id, userId: user.id ?? '' })) },
     ]);
   };
 

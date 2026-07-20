@@ -31,7 +31,7 @@ export default function ActivityDetailScreen({ route, navigation }: Props): Reac
 
   const handleJoin = () => {
     if (!user) return;
-    dispatch(joinActivity({ activityId, userName: user.name }));
+    dispatch(joinActivity({ activityId, userId: user.id ?? '', userName: user.name }));
     dispatch(addNotification({
       id: Date.now().toString(), type: 'activity_joined',
       title: `You joined ${sanitize(activity.title)}`,
@@ -43,7 +43,7 @@ export default function ActivityDetailScreen({ route, navigation }: Props): Reac
   const handleLeave = () => {
     Alert.alert('Leave Activity', 'Are you sure you want to leave?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Leave', style: 'destructive', onPress: () => user && dispatch(leaveActivity({ activityId, userName: user.name })) },
+      { text: 'Leave', style: 'destructive', onPress: () => user && dispatch(leaveActivity({ activityId, userId: user.id ?? '' })) },
     ]);
   };
 
@@ -104,7 +104,7 @@ export default function ActivityDetailScreen({ route, navigation }: Props): Reac
             <View style={styles.locationRow}>
               <Icon name="map-marker" size={16} color={C.btnInactive} style={{ marginRight: 6 }} />
               <Text style={styles.locationText}>{activity.location}</Text>
-              {activity.distance && <Text style={styles.distanceBadge}>{activity.distance}</Text>}
+              {activity.distance && <Text style={styles.distanceBadge}>{activity.distance} km</Text>}
             </View>
             <View style={styles.mapPreview}>
               <Icon name="map" size={36} color={C.textMuted} />
@@ -117,10 +117,10 @@ export default function ActivityDetailScreen({ route, navigation }: Props): Reac
             <Text style={styles.sectionTitle}>Organizer</Text>
             <View style={styles.organizerRow}>
               <View style={styles.organizerAvatar}>
-                <Text style={styles.organizerAvatarText}>{activity.host[0]}</Text>
+                <Text style={styles.organizerAvatarText}>{activity.host.name[0]}</Text>
               </View>
               <View>
-                <Text style={styles.organizerName}>{activity.host}</Text>
+                <Text style={styles.organizerName}>{activity.host.name}</Text>
                 <Text style={styles.organizerRole}>Activity Host</Text>
               </View>
               {isCreated && <View style={styles.youBadge}><Text style={styles.youBadgeText}>You</Text></View>}
@@ -134,8 +134,8 @@ export default function ActivityDetailScreen({ route, navigation }: Props): Reac
             </View>
             <View style={styles.participantsRow}>
               {activity.participants.slice(0, 6).map((p, i) => (
-                <View key={p} style={[styles.participantAvatar, { marginLeft: i > 0 ? -8 : 0 }]}>
-                  <Text style={styles.participantAvatarText}>{p[0]}</Text>
+                <View key={p.userId} style={[styles.participantAvatar, { marginLeft: i > 0 ? -8 : 0 }]}>
+                  <Text style={styles.participantAvatarText}>{p.user.name[0]}</Text>
                 </View>
               ))}
               {activity.participants.length > 6 && (

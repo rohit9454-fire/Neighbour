@@ -66,7 +66,7 @@ export default function ActivitiesScreen({ navigation }: Props): React.JSX.Eleme
     else if (activeFilter !== 'All') list = list.filter(a => a.category === activeFilter);
     if (activeSort === 'Popular') list = [...list].sort((a, b) => b.participants.length - a.participants.length);
     else if (activeSort === 'Available Slots') list = [...list].sort((a, b) => (b.maxParticipants - b.participants.length) - (a.maxParticipants - a.participants.length));
-    else if (activeSort === 'Distance') list = [...list].sort((a, b) => parseFloat(a.distance ?? '99') - parseFloat(b.distance ?? '99'));
+    else if (activeSort === 'Distance') list = [...list].sort((a, b) => parseFloat(a.distance?.toString() ?? '99') - parseFloat(b.distance?.toString() ?? '99'));
     return list;
   }, [activities, search, activeFilter, activeSort]);
 
@@ -87,7 +87,7 @@ export default function ActivitiesScreen({ navigation }: Props): React.JSX.Eleme
             <Text style={styles.cardTitle} numberOfLines={1}>{item.title}</Text>
             <Text style={styles.cardMeta}><Icon name="map-marker" size={12} color={C.textSecondary} /> {item.location}</Text>
             <Text style={styles.cardMeta}><Icon name="calendar" size={12} color={C.textSecondary} /> {item.date} · {item.time} · <Icon name="clock-outline" size={12} color={C.textSecondary} /> {item.duration}</Text>
-            <Text style={styles.cardMeta}><Icon name="account" size={12} color={C.textSecondary} /> {item.host}</Text>
+            <Text style={styles.cardMeta}><Icon name="account" size={12} color={C.textSecondary} /> {item.host.name}</Text>
           </View>
         </View>
         <View style={styles.cardBottom}>
@@ -95,7 +95,7 @@ export default function ActivitiesScreen({ navigation }: Props): React.JSX.Eleme
           <Text style={styles.slotInfo}>{item.participants.length}/{item.maxParticipants} · {remaining > 0 ? `${remaining} left` : 'Full'}</Text>
           <TouchableOpacity
             style={[styles.joinBtn, joined && styles.joinBtnJoined]}
-            onPress={() => user && dispatch(joinActivity({ activityId: item.id, userName: user.name }))}>
+            onPress={() => user && dispatch(joinActivity({ activityId: item.id, userId: user.id ?? '', userName: user.name }))}>
             <Text style={[styles.joinBtnText, joined && styles.joinBtnTextJoined]}>{joined ? '✓ Joined' : 'Join'}</Text>
           </TouchableOpacity>
         </View>
