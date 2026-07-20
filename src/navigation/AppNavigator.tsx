@@ -21,6 +21,7 @@ import NotificationsScreen from '../screens/main/NotificationsScreen';
 import ActivitiesScreen from '../screens/main/ActivitiesScreen';
 import ActivityDetailScreen from '../screens/main/ActivityDetailScreen';
 import CreateActivityScreen from '../screens/main/CreateActivityScreen';
+import EditActivityScreen from '../screens/main/EditActivityScreen';
 import MyActivitiesScreen from '../screens/main/MyActivitiesScreen';
 import ActivityChatScreen from '../screens/main/ActivityChatScreen';
 
@@ -47,6 +48,7 @@ function HomeStackNavigator(): React.JSX.Element {
       <HomeStack.Screen name="EventDetail" component={EventDetailScreen} />
       <HomeStack.Screen name="CreateEvent" component={CreateEventScreen} />
       <HomeStack.Screen name="ActivityDetail" component={ActivityDetailScreen} />
+      <HomeStack.Screen name="EditActivity" component={EditActivityScreen} />
       <HomeStack.Screen name="Notifications" component={NotificationsScreen} />
     </HomeStack.Navigator>
   );
@@ -58,6 +60,7 @@ function ActivitiesStackNavigator(): React.JSX.Element {
       <ActivitiesStack.Screen name="ActivitiesMain" component={ActivitiesScreen} />
       <ActivitiesStack.Screen name="ActivityDetail" component={ActivityDetailScreen} />
       <ActivitiesStack.Screen name="CreateActivity" component={CreateActivityScreen} />
+      <ActivitiesStack.Screen name="EditActivity" component={EditActivityScreen} />
       <ActivitiesStack.Screen name="MyActivities" component={MyActivitiesScreen} />
       <ActivitiesStack.Screen name="ActivityChat" component={ActivityChatScreen} />
     </ActivitiesStack.Navigator>
@@ -90,6 +93,7 @@ function CreateTabNavigator(): React.JSX.Element {
   return (
     <ActivitiesStack.Navigator screenOptions={STACK_OPTS}>
       <ActivitiesStack.Screen name="CreateActivity" component={CreateActivityScreen} />
+      <ActivitiesStack.Screen name="EditActivity" component={EditActivityScreen} />
       <ActivitiesStack.Screen name="ActivitiesMain" component={ActivitiesScreen} />
       <ActivitiesStack.Screen name="ActivityDetail" component={ActivityDetailScreen} />
       <ActivitiesStack.Screen name="MyActivities" component={MyActivitiesScreen} />
@@ -107,6 +111,7 @@ function ChatsTabNavigator(): React.JSX.Element {
       <ActivitiesStack.Screen name="ActivityDetail" component={ActivityDetailScreen} />
       <ActivitiesStack.Screen name="ActivitiesMain" component={ActivitiesScreen} />
       <ActivitiesStack.Screen name="CreateActivity" component={CreateActivityScreen} />
+      <ActivitiesStack.Screen name="EditActivity" component={EditActivityScreen} />
     </ActivitiesStack.Navigator>
   );
 }

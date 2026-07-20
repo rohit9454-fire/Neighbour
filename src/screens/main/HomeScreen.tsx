@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   RefreshControl, ListRenderItemInfo,
@@ -9,7 +9,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootState } from '../../store';
 import { HomeStackParamList, Activity } from '../../types';
-import { selectAllActivities, joinActivity, fetchActivitiesRequest, fetchActivitiesRefresh } from '../../store/slices/activitiesSlice';
+import { selectAllActivities, joinActivityRequest, fetchActivitiesRequest, fetchActivitiesRefresh } from '../../store/slices/activitiesSlice';
 import { selectUnreadCount } from '../../store/slices/notificationsSlice';
 import { C } from '../../theme';
 
@@ -36,8 +36,8 @@ function SkeletonCard(): React.JSX.Element {
   );
 }
 
-function ActivityCard({ item, onPress, onJoin, joined }: {
-  item: Activity; onPress: () => void; onJoin: () => void; joined: boolean;
+function ActivityCard({ item, onPress, onJoin, joined, joining, isOwner }: {
+  item: Activity; onPress: () => void; onJoin: () => void; joined: boolean; joining: boolean; isOwner: boolean;
 }): React.JSX.Element {
   const remaining = item.maxParticipants - item.participants.length;
   return (
@@ -71,10 +71,10 @@ function ActivityCard({ item, onPress, onJoin, joined }: {
           </Text>
         </View>
         <TouchableOpacity
-          style={[styles.joinBtn, joined && styles.joinBtnJoined]}
-          onPress={onJoin} activeOpacity={0.8}>
-          <Text style={[styles.joinBtnText, joined && styles.joinBtnTextJoined]}>
-            {joined ? '✓ Joined' : 'Join'}
+          style={[styles.joinBtn, (joined || isOwner) && styles.joinBtnJoined]}
+          onPress={onJoin} disabled={joining || joined || isOwner} activeOpacity={0.8}>
+          <Text style={[styles.joinBtnText, (joined || isOwner) && styles.joinBtnTextJoined]}>
+            {isOwner ? 'Your Activity' : joined ? '✓ Joined' : joining ? 'Joining…' : 'Join'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -90,7 +90,8 @@ export default function HomeScreen({ navigation }: Props): React.JSX.Element {
   const myJoinedIds = useSelector((state: RootState) => state.activities.myJoined);
   const loading = useSelector((state: RootState) => state.activities.loading);
   const refreshingStore = useSelector((state: RootState) => state.activities.refreshing);
-  const [refreshing, setRefreshing] = useState(false);
+  const joiningIds = useSelector((state: RootState) => state.activities.joiningIds);
+  const joinError = useSelector((state: RootState) => state.activities.joinError);
 
   useEffect(() => {
     dispatch(fetchActivitiesRequest());
@@ -101,9 +102,15 @@ export default function HomeScreen({ navigation }: Props): React.JSX.Element {
   }, [dispatch]);
 
   const handleJoin = (activity: Activity) => {
-    if (!user) return;
-    dispatch(joinActivity({ activityId: activity.id, userId: user.id ?? '', userName: user.name }));
+    dispatch(joinActivityRequest(activity.id));
   };
+
+  const isActivityOwner = (activity: Activity) =>
+    activity.hostId === user?.id || activity.host.id === user?.id;
+
+  const hasJoinedActivity = (activity: Activity) =>
+    myJoinedIds.includes(activity.id) ||
+    activity.participants.some(participant => participant.userId === user?.id);
 
   const getGreeting = () => {
     const h = new Date().getHours();
@@ -204,11 +211,14 @@ export default function HomeScreen({ navigation }: Props): React.JSX.Element {
           </View>
         )}
         contentContainerStyle={{ paddingBottom: 100 }}
-        refreshControl={<RefreshControl refreshing={refreshing || refreshingStore} onRefresh={onRefresh} tintColor={C.btnActive} />}
+        ListFooterComponent={joinError ? <Text style={styles.joinError}>{joinError}</Text> : null}
+        refreshControl={<RefreshControl refreshing={refreshingStore} onRefresh={onRefresh} tintColor={C.btnActive} />}
         renderItem={({ item }: ListRenderItemInfo<Activity>) => (
           <ActivityCard
             item={item}
-            joined={myJoinedIds.includes(item.id)}
+            joined={hasJoinedActivity(item)}
+            joining={joiningIds.includes(item.id)}
+            isOwner={isActivityOwner(item)}
             onPress={() => navigation.navigate('ActivityDetail', { activityId: item.id })}
             onJoin={() => handleJoin(item)}
           />
@@ -295,4 +305,5 @@ const styles = StyleSheet.create({
   emptyEmoji: { fontSize: 64, marginBottom: 16 },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: C.textPrimary, marginBottom: 8 },
   emptySub: { fontSize: 14, color: C.textMuted, textAlign: 'center' },
+  joinError: { color: C.danger, fontSize: 13, paddingHorizontal: 20, paddingVertical: 12, textAlign: 'center' },
 });

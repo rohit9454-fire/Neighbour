@@ -9,7 +9,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootState } from '../../store';
 import { ActivitiesStackParamList, Activity, ActivityCategory } from '../../types';
-import { selectAllActivities, joinActivity, fetchActivitiesRequest, fetchActivitiesRefresh } from '../../store/slices/activitiesSlice';
+import { selectAllActivities, joinActivityRequest, fetchActivitiesRequest, fetchActivitiesRefresh } from '../../store/slices/activitiesSlice';
 import { C } from '../../theme';
 
 type Props = NativeStackScreenProps<ActivitiesStackParamList, 'ActivitiesMain'>;
@@ -48,6 +48,8 @@ export default function ActivitiesScreen({ navigation }: Props): React.JSX.Eleme
   const myJoinedIds = useSelector((state: RootState) => state.activities.myJoined);
   const loading = useSelector((state: RootState) => state.activities.loading);
   const refreshing = useSelector((state: RootState) => state.activities.refreshing);
+  const joiningIds = useSelector((state: RootState) => state.activities.joiningIds);
+  const joinError = useSelector((state: RootState) => state.activities.joinError);
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterKey>('All');
   const [activeSort, setActiveSort] = useState<SortKey>('Newest');
@@ -77,6 +79,9 @@ export default function ActivitiesScreen({ navigation }: Props): React.JSX.Eleme
 
   const renderItem = ({ item }: ListRenderItemInfo<Activity>) => {
     const joined = myJoinedIds.includes(item.id);
+    const isOwner = item.hostId === user?.id || item.host.id === user?.id;
+    const hasJoined = joined || item.participants.some(participant => participant.userId === user?.id);
+    const joining = joiningIds.includes(item.id);
     const remaining = item.maxParticipants - item.participants.length;
     return (
       <TouchableOpacity style={styles.card}
@@ -94,9 +99,10 @@ export default function ActivitiesScreen({ navigation }: Props): React.JSX.Eleme
           <View style={styles.categoryPill}><Text style={styles.categoryPillText}>{item.category}</Text></View>
           <Text style={styles.slotInfo}>{item.participants.length}/{item.maxParticipants} · {remaining > 0 ? `${remaining} left` : 'Full'}</Text>
           <TouchableOpacity
-            style={[styles.joinBtn, joined && styles.joinBtnJoined]}
-            onPress={() => user && dispatch(joinActivity({ activityId: item.id, userId: user.id ?? '', userName: user.name }))}>
-            <Text style={[styles.joinBtnText, joined && styles.joinBtnTextJoined]}>{joined ? '✓ Joined' : 'Join'}</Text>
+            style={[styles.joinBtn, (hasJoined || isOwner) && styles.joinBtnJoined]}
+            onPress={() => dispatch(joinActivityRequest(item.id))}
+            disabled={hasJoined || isOwner || joining}>
+            <Text style={[styles.joinBtnText, (hasJoined || isOwner) && styles.joinBtnTextJoined]}>{isOwner ? 'Your Activity' : hasJoined ? '✓ Joined' : joining ? 'Joining…' : 'Join'}</Text>
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
@@ -139,6 +145,7 @@ export default function ActivitiesScreen({ navigation }: Props): React.JSX.Eleme
             </TouchableOpacity>
           )} />
       </View>
+      {joinError && <Text style={styles.joinError}>{joinError}</Text>}
       {loading && activities.length === 0 ? (
         <View style={styles.loadingWrap}>
           <ActivityIndicator size="large" color={C.btnActive} />
@@ -167,6 +174,7 @@ const styles = StyleSheet.create({
   myBtnText: { fontSize: 12, color: C.btnActive, fontWeight: '600' },
   searchWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.bgCard, borderRadius: 14, marginHorizontal: 16, marginBottom: 12, paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, borderColor: C.border },
   searchInput: { flex: 1, fontSize: 14, color: C.textPrimary },
+  joinError: { color: C.danger, fontSize: 13, paddingHorizontal: 20, paddingBottom: 8, textAlign: 'center' },
 
   filterList: {
     paddingHorizontal: 16,

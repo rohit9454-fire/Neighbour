@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useDispatch, useSelector } from 'react-redux';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootState } from '../../store';
 import { ActivitiesStackParamList, ActivityCategory, ActivityVisibility } from '../../types';
-import { addActivity } from '../../store/slices/activitiesSlice';
+import {
+  clearCreateActivityState,
+  createActivityRequest,
+} from '../../store/slices/activitiesSlice';
 import { C } from '../../theme';
 
 type Props = NativeStackScreenProps<ActivitiesStackParamList, 'CreateActivity'>;
@@ -20,7 +23,9 @@ const VISIBILITIES: ActivityVisibility[] = ['Public', 'Private', 'Society Only']
 
 export default function CreateActivityScreen({ navigation }: Props): React.JSX.Element {
   const dispatch = useDispatch();
-  const user = useSelector((state: RootState) => state.auth.user);
+  const { isCreating, createError, lastCreatedId } = useSelector(
+    (state: RootState) => state.activities,
+  );
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<ActivityCategory>('Sports');
   const [description, setDescription] = useState('');
@@ -36,25 +41,46 @@ export default function CreateActivityScreen({ navigation }: Props): React.JSX.E
     if (!description.trim()) return 'Description is required';
     if (!location.trim()) return 'Location is required';
     if (!date.trim()) return 'Date is required';
+    if (Number.isNaN(Date.parse(date))) return 'Enter a valid date';
     if (!time.trim()) return 'Time is required';
     const max = parseInt(maxParticipants, 10);
     if (isNaN(max) || max <= 0) return 'Max participants must be greater than 0';
     return null;
   };
 
+  useEffect(() => {
+    if (createError) {
+      Alert.alert('Could not create activity', createError, [
+        { text: 'OK', onPress: () => dispatch(clearCreateActivityState()) },
+      ]);
+    }
+  }, [createError, dispatch]);
+
+  useEffect(() => {
+    if (!lastCreatedId) return;
+
+    Alert.alert('Activity Created!', 'Your activity is now live.', [
+      {
+        text: 'OK',
+        onPress: () => {
+          dispatch(clearCreateActivityState());
+          navigation.goBack();
+        },
+      },
+    ]);
+  }, [dispatch, lastCreatedId, navigation]);
+
   const handleCreate = () => {
     const error = validate();
     if (error) return Alert.alert('Validation Error', error);
-    dispatch(addActivity({
-      id: Date.now().toString(), title: title.trim(), category,
+    dispatch(createActivityRequest({
+      title: title.trim(), category,
       description: description.trim(), location: location.trim(),
-      date: date.trim(), time: time.trim(), duration: duration.trim() || '1 hr',
-      maxParticipants: parseInt(maxParticipants, 10), participants: [],
-      hostId: user?.id ?? '', host: { id: user?.id ?? '', name: user?.name ?? 'You', avatarUrl: null },
+      date: new Date(date).toISOString(), time: time.trim(), duration: duration.trim() || '1 hr',
+      maxParticipants: parseInt(maxParticipants, 10),
       emoji: CATEGORY_EMOJIS[category],
-      visibility, status: 'upcoming', createdAt: new Date().toISOString(), distance: 0,
+      visibility,
     }));
-    Alert.alert('Activity Created!', 'Your activity is now live.', [{ text: 'OK', onPress: () => navigation.goBack() }]);
   };
 
   return (
@@ -65,8 +91,8 @@ export default function CreateActivityScreen({ navigation }: Props): React.JSX.E
             <Text style={styles.cancelText}>Cancel</Text>
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Create Activity</Text>
-          <TouchableOpacity onPress={handleCreate}>
-            <Text style={styles.postText}>Post</Text>
+          <TouchableOpacity onPress={handleCreate} disabled={isCreating}>
+            {isCreating ? <ActivityIndicator size="small" color={C.btnInactive} /> : <Text style={styles.postText}>Post</Text>}
           </TouchableOpacity>
         </View>
 
@@ -101,7 +127,7 @@ export default function CreateActivityScreen({ navigation }: Props): React.JSX.E
         <View style={styles.row}>
           <View style={styles.halfField}>
             <Text style={styles.label}>Date *</Text>
-            <TextInput style={styles.input} placeholder="e.g. Today / 22 Jun" placeholderTextColor={C.textMuted} value={date} onChangeText={setDate} />
+            <TextInput style={styles.input} placeholder="e.g. 2026-07-20" placeholderTextColor={C.textMuted} value={date} onChangeText={setDate} />
           </View>
           <View style={styles.halfField}>
             <Text style={styles.label}>Time *</Text>
@@ -129,9 +155,8 @@ export default function CreateActivityScreen({ navigation }: Props): React.JSX.E
           ))}
         </View>
 
-        <TouchableOpacity style={styles.submitBtn} onPress={handleCreate} activeOpacity={0.85}>
-          <Text style={styles.submitText}>Create Activity </Text>
-          <Icon name="arrow-right" size={18} color={C.textWhite} />
+        <TouchableOpacity style={[styles.submitBtn, isCreating && styles.submitBtnDisabled]} onPress={handleCreate} disabled={isCreating} activeOpacity={0.85}>
+          {isCreating ? <ActivityIndicator color={C.textWhite} /> : <><Text style={styles.submitText}>Create Activity </Text><Icon name="arrow-right" size={18} color={C.textWhite} /></>}
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -167,5 +192,6 @@ const styles = StyleSheet.create({
   visibilityText: { fontSize: 12, color: C.textMuted, fontWeight: '500' },
   visibilityTextActive: { color: C.btnActive, fontWeight: '700' },
   submitBtn: { backgroundColor: C.btnInactive, borderRadius: 16, height: 56, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6 },
+  submitBtnDisabled: { opacity: 0.7 },
   submitText: { fontSize: 16, fontWeight: '700', color: C.textWhite },
 });

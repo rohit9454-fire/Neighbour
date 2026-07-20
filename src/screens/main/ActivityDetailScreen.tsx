@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, Share } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -6,7 +6,13 @@ import { useSelector, useDispatch } from 'react-redux';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootState } from '../../store';
 import { ActivitiesStackParamList } from '../../types';
-import { selectActivityById, joinActivity, leaveActivity, selectIsJoined, selectIsCreated } from '../../store/slices/activitiesSlice';
+import {
+  clearJoinActivityState,
+  joinActivityRequest,
+  selectActivityById,
+  selectIsCreated,
+  selectIsJoined,
+} from '../../store/slices/activitiesSlice';
 import { addNotification } from '../../store/slices/notificationsSlice';
 import { C } from '../../theme';
 
@@ -17,9 +23,24 @@ export default function ActivityDetailScreen({ route, navigation }: Props): Reac
   const dispatch = useDispatch();
   const user = useSelector((state: RootState) => state.auth.user);
   const activity = useSelector(selectActivityById(activityId));
-  const isJoined = useSelector(selectIsJoined(activityId));
+  const joinedLocally = useSelector(selectIsJoined(activityId));
   const isCreated = useSelector(selectIsCreated(activityId));
+  const { joiningIds, joinError, lastJoinedId } = useSelector(
+    (state: RootState) => state.activities,
+  );
   const [bookmarked, setBookmarked] = useState(false);
+
+  useEffect(() => {
+    if (lastJoinedId !== activityId || !activity || !user) return;
+
+    dispatch(addNotification({
+      id: Date.now().toString(), type: 'activity_joined',
+      title: `You joined ${activity.title}`,
+      body: `See you at ${activity.location} on ${activity.date} at ${activity.time}`,
+      timestamp: new Date().toISOString(), read: false, activityId,
+    }));
+    dispatch(clearJoinActivityState());
+  }, [activity, activityId, dispatch, lastJoinedId, user]);
 
   if (!activity) {
     return <SafeAreaView style={styles.container}><Text style={styles.notFound}>Activity not found</Text></SafeAreaView>;
@@ -27,24 +48,15 @@ export default function ActivityDetailScreen({ route, navigation }: Props): Reac
 
   const remaining = activity.maxParticipants - activity.participants.length;
   const isFull = remaining <= 0;
+  const isOwner = isCreated || activity.hostId === user?.id || activity.host.id === user?.id;
+  const isJoined = joinedLocally || activity.participants.some(
+    participant => participant.userId === user?.id,
+  );
+  const isJoining = joiningIds.includes(activityId);
   const sanitize = (s: string) => s.replace(/[\r\n<>"'`]/g, ' ').trim();
 
   const handleJoin = () => {
-    if (!user) return;
-    dispatch(joinActivity({ activityId, userId: user.id ?? '', userName: user.name }));
-    dispatch(addNotification({
-      id: Date.now().toString(), type: 'activity_joined',
-      title: `You joined ${sanitize(activity.title)}`,
-      body: `See you at ${sanitize(activity.location)} on ${activity.date} at ${activity.time}`,
-      timestamp: new Date().toISOString(), read: false, activityId,
-    }));
-  };
-
-  const handleLeave = () => {
-    Alert.alert('Leave Activity', 'Are you sure you want to leave?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Leave', style: 'destructive', onPress: () => user && dispatch(leaveActivity({ activityId, userId: user.id ?? '' })) },
-    ]);
+    dispatch(joinActivityRequest(activityId));
   };
 
   const handleShare = async () => {
@@ -98,6 +110,15 @@ export default function ActivityDetailScreen({ route, navigation }: Props): Reac
             <Text style={styles.sectionTitle}>About</Text>
             <Text style={styles.description}>{activity.description}</Text>
           </View>
+
+          {isOwner && (
+            <TouchableOpacity
+              style={styles.editBtn}
+              onPress={() => navigation.navigate('EditActivity', { activityId })}>
+              <Icon name="pencil-outline" size={18} color={C.btnActive} />
+              <Text style={styles.editBtnText}>Edit Activity</Text>
+            </TouchableOpacity>
+          )}
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Location</Text>
@@ -168,15 +189,20 @@ export default function ActivityDetailScreen({ route, navigation }: Props): Reac
       </ScrollView>
 
       <View style={styles.bottomBar}>
-        {isJoined ? (
-          <TouchableOpacity style={styles.leaveBtn} onPress={handleLeave}>
-            <Text style={styles.leaveBtnText}>Leave Activity</Text>
-          </TouchableOpacity>
+        {isOwner ? (
+          <View style={styles.joinedBtn}>
+            <Text style={styles.joinedBtnText}>Your Activity</Text>
+          </View>
+        ) : isJoined ? (
+          <View style={styles.joinedBtn}>
+            <Text style={styles.joinedBtnText}>✓ Joined</Text>
+          </View>
         ) : (
-          <TouchableOpacity style={[styles.joinBtn, isFull && styles.joinBtnDisabled]} onPress={handleJoin} disabled={isFull}>
-            <Text style={styles.joinBtnText}>{isFull ? 'Activity Full' : 'Join Activity →'}</Text>
+          <TouchableOpacity style={[styles.joinBtn, isFull && styles.joinBtnDisabled]} onPress={handleJoin} disabled={isFull || isJoining}>
+            <Text style={styles.joinBtnText}>{isFull ? 'Activity Full' : isJoining ? 'Joining…' : 'Join Activity →'}</Text>
           </TouchableOpacity>
         )}
+        {joinError && <Text style={styles.joinError}>{joinError}</Text>}
       </View>
     </SafeAreaView>
   );
@@ -242,11 +268,16 @@ const styles = StyleSheet.create({
 
   chatBtn: { backgroundColor: C.bgMuted, borderRadius: 14, padding: 16, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 80, borderWidth: 1, borderColor: C.border },
   chatBtnText: { fontSize: 14, color: C.btnActive, fontWeight: '600' },
+  editBtn: { backgroundColor: C.bgCard, borderRadius: 14, padding: 16, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, marginBottom: 12, borderWidth: 1, borderColor: C.border },
+  editBtnText: { fontSize: 14, color: C.btnActive, fontWeight: '600' },
 
   bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 20, backgroundColor: C.bg, borderTopWidth: 1, borderTopColor: C.border },
   joinBtn: { backgroundColor: C.btnInactive, borderRadius: 16, height: 56, justifyContent: 'center', alignItems: 'center' },
   joinBtnDisabled: { backgroundColor: C.bgMuted },
   joinBtnText: { fontSize: 16, fontWeight: '700', color: C.textWhite },
+  joinedBtn: { backgroundColor: C.successBg, borderColor: C.success, borderRadius: 16, borderWidth: 1, height: 56, justifyContent: 'center', alignItems: 'center' },
+  joinedBtnText: { color: C.success, fontSize: 16, fontWeight: '700' },
+  joinError: { color: C.danger, fontSize: 12, marginTop: 8, textAlign: 'center' },
   leaveBtn: { backgroundColor: C.dangerBg, borderRadius: 16, height: 56, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: C.danger },
   leaveBtnText: { fontSize: 16, fontWeight: '700', color: C.danger },
 });
