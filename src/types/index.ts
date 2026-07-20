@@ -149,6 +149,7 @@ export type GroupsStackParamList = {
 
 export type ProfileStackParamList = {
   ProfileMain: undefined;
+  EditProfile: undefined;
 };
 
 export type BottomTabParamList = {

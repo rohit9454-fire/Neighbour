@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
-  TextInput, RefreshControl, ListRenderItemInfo,
+  TextInput, RefreshControl, ListRenderItemInfo, ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -9,7 +9,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootState } from '../../store';
 import { ActivitiesStackParamList, Activity, ActivityCategory } from '../../types';
-import { selectAllActivities, joinActivity } from '../../store/slices/activitiesSlice';
+import { selectAllActivities, joinActivity, fetchActivitiesRequest, fetchActivitiesRefresh } from '../../store/slices/activitiesSlice';
 import { C } from '../../theme';
 
 type Props = NativeStackScreenProps<ActivitiesStackParamList, 'ActivitiesMain'>;
@@ -46,11 +46,16 @@ export default function ActivitiesScreen({ navigation }: Props): React.JSX.Eleme
   const user = useSelector((state: RootState) => state.auth.user);
   const activities = useSelector(selectAllActivities);
   const myJoinedIds = useSelector((state: RootState) => state.activities.myJoined);
+  const loading = useSelector((state: RootState) => state.activities.loading);
+  const refreshing = useSelector((state: RootState) => state.activities.refreshing);
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterKey>('All');
   const [activeSort, setActiveSort] = useState<SortKey>('Newest');
-  const [refreshing, setRefreshing] = useState(false);
   const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    dispatch(fetchActivitiesRequest());
+  }, [dispatch]);
   const PAGE_SIZE = 5;
 
   const filtered = useMemo(() => {
@@ -68,7 +73,7 @@ export default function ActivitiesScreen({ navigation }: Props): React.JSX.Eleme
   const paginated = filtered.slice(0, page * PAGE_SIZE);
   const hasMore = paginated.length < filtered.length;
 
-  const onRefresh = () => { setRefreshing(true); setPage(1); setTimeout(() => setRefreshing(false), 1000); };
+  const onRefresh = () => { dispatch(fetchActivitiesRefresh()); setPage(1); };
 
   const renderItem = ({ item }: ListRenderItemInfo<Activity>) => {
     const joined = myJoinedIds.includes(item.id);
@@ -134,6 +139,12 @@ export default function ActivitiesScreen({ navigation }: Props): React.JSX.Eleme
             </TouchableOpacity>
           )} />
       </View>
+      {loading && activities.length === 0 ? (
+        <View style={styles.loadingWrap}>
+          <ActivityIndicator size="large" color={C.btnActive} />
+          <Text style={styles.loadingText}>Loading activities...</Text>
+        </View>
+      ) : (
       <FlatList<Activity>
         data={paginated} keyExtractor={item => item.id} renderItem={renderItem}
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 }}
@@ -143,6 +154,7 @@ export default function ActivitiesScreen({ navigation }: Props): React.JSX.Eleme
         onEndReached={() => hasMore && setPage(p => p + 1)} onEndReachedThreshold={0.3}
         ListFooterComponent={hasMore ? <View style={styles.loadMore}><Text style={styles.loadMoreText}>Loading more...</Text></View> : null}
       />
+      )}
     </SafeAreaView>
   );
 }
@@ -210,6 +222,8 @@ const styles = StyleSheet.create({
 
   loadMore: { alignItems: 'center', paddingVertical: 16 },
   loadMoreText: { fontSize: 13, color: C.textMuted },
+  loadingWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
+  loadingText: { fontSize: 14, color: C.textMuted },
 
   emptyContainer: { alignItems: 'center', paddingTop: 40, paddingHorizontal: 32 },
   emptyIllustration: { fontSize: 80, marginBottom: 16 },

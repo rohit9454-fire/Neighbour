@@ -11,11 +11,18 @@ import {
   refreshTokenRequest,
   refreshTokenSuccess,
   refreshTokenFailure,
+  updateProfileRequest,
+  updateProfileSuccess,
+  updateProfileFailure,
+  fetchStatsRequest,
+  fetchStatsSuccess,
+  fetchStatsFailure,
   logout,
   checkAutoLogin,
   autoLoginCheckedDone,
 } from '../slices/authSlice';
-import { authService, AuthResponse, AuthUser, setAuthToken, clearAuthToken } from '../../services';
+import { authService, AuthResponse, AuthUser, UserStats, setAuthToken, clearAuthToken } from '../../services';
+import { UpdateProfilePayload } from '../../services/authService';
 import { User } from '../../types';
 
 // ─── Storage Keys ─────────────────────────────────────────────────────────────
@@ -250,6 +257,29 @@ function* handleAutoLogin() {
   }
 }
 
+// ─── Update Profile ───────────────────────────────────────────────────────────
+
+function* handleUpdateProfile(action: ReturnType<typeof updateProfileRequest>) {
+  try {
+    const authUser: AuthUser = yield call(authService.updateMe, action.payload as UpdateProfilePayload);
+    const user = mapAuthUserToUser(authUser);
+    yield call([AsyncStorage, AsyncStorage.setItem], USER_KEY, JSON.stringify(user));
+    yield put(updateProfileSuccess(user));
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to update profile.';
+    yield put(updateProfileFailure(message));
+  }
+}
+
+function* handleFetchStats() {
+  try {
+    const stats: UserStats = yield call(authService.getMyStats);
+    yield put(fetchStatsSuccess(stats));
+  } catch {
+    yield put(fetchStatsFailure());
+  }
+}
+
 // ─── Logout ───────────────────────────────────────────────────────────────────
 
 function* handleLogout() {
@@ -260,10 +290,12 @@ function* handleLogout() {
 // ─── Root Auth Saga ───────────────────────────────────────────────────────────
 
 export function* authSaga() {
-  yield takeLatest(signUpRequest.type,       handleSignUp);
-  yield takeLatest(loginRequest.type,        handleLogin);
-  yield takeLatest(fetchMeRequest.type,      handleFetchMe);
-  yield takeLatest(refreshTokenRequest.type, handleRefreshToken);
-  yield takeLatest(checkAutoLogin.type,      handleAutoLogin);
-  yield takeLatest(logout.type,              handleLogout);
+  yield takeLatest(signUpRequest.type,          handleSignUp);
+  yield takeLatest(loginRequest.type,           handleLogin);
+  yield takeLatest(fetchMeRequest.type,         handleFetchMe);
+  yield takeLatest(refreshTokenRequest.type,    handleRefreshToken);
+  yield takeLatest(checkAutoLogin.type,         handleAutoLogin);
+  yield takeLatest(updateProfileRequest.type,   handleUpdateProfile);
+  yield takeLatest(fetchStatsRequest.type,      handleFetchStats);
+  yield takeLatest(logout.type,                 handleLogout);
 }

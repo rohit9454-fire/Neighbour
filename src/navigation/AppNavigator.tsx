@@ -30,6 +30,7 @@ import GroupDetailScreen from '../screens/main/GroupDetailScreen';
 
 // Screens – Profile
 import ProfileScreen from '../screens/main/ProfileScreen';
+import EditProfileScreen from '../screens/main/EditProfileScreen';
 
 const Tab = createBottomTabNavigator<BottomTabParamList>();
 const HomeStack = createNativeStackNavigator<HomeStackParamList>();
@@ -79,6 +80,7 @@ function ProfileStackNavigator(): React.JSX.Element {
   return (
     <ProfileStack.Navigator screenOptions={STACK_OPTS}>
       <ProfileStack.Screen name="ProfileMain" component={ProfileScreen} />
+      <ProfileStack.Screen name="EditProfile" component={EditProfileScreen} />
     </ProfileStack.Navigator>
   );
 }

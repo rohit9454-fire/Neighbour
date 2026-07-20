@@ -1,6 +1,12 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { User } from '../../types';
 
+interface UserStats {
+  created: number;
+  joined: number;
+  neighbours: number;
+}
+
 interface AuthState {
   user: User | null;
   token: string | null;
@@ -8,6 +14,9 @@ interface AuthState {
   loading: boolean;
   isRefreshing: boolean;
   isFetchingMe: boolean;
+  isUpdatingProfile: boolean;
+  stats: UserStats | null;
+  isFetchingStats: boolean;
   error: string | null;
   autoLoginChecked: boolean;
 }
@@ -19,6 +28,9 @@ const initialState: AuthState = {
   loading: false,
   isRefreshing: false,
   isFetchingMe: false,
+  isUpdatingProfile: false,
+  stats: null,
+  isFetchingStats: false,
   error: null,
   autoLoginChecked: false,
 };
@@ -149,6 +161,35 @@ const authSlice = createSlice({
       state.isFetchingMe = false;
       state.error = action.payload ?? 'Failed to load profile.';
     },
+
+    // ── Update Profile ─────────────────────────────────────────────────────────
+    updateProfileRequest: (
+      state,
+      _action: PayloadAction<{ name?: string; society?: string; sector?: string; interests?: string[]; avatarUrl?: string }>,
+    ) => {
+      state.isUpdatingProfile = true;
+      state.error = null;
+    },
+    updateProfileSuccess: (state, action: PayloadAction<User>) => {
+      state.user = action.payload;
+      state.isUpdatingProfile = false;
+    },
+    updateProfileFailure: (state, action: PayloadAction<string | undefined>) => {
+      state.isUpdatingProfile = false;
+      state.error = action.payload ?? 'Failed to update profile.';
+    },
+
+    // ── Fetch Stats ────────────────────────────────────────────────────────────
+    fetchStatsRequest: (state) => {
+      state.isFetchingStats = true;
+    },
+    fetchStatsSuccess: (state, action: PayloadAction<UserStats>) => {
+      state.stats = action.payload;
+      state.isFetchingStats = false;
+    },
+    fetchStatsFailure: (state) => {
+      state.isFetchingStats = false;
+    },
   },
 });
 
@@ -163,6 +204,12 @@ export const {
   fetchMeRequest,
   fetchMeSuccess,
   fetchMeFailure,
+  updateProfileRequest,
+  updateProfileSuccess,
+  updateProfileFailure,
+  fetchStatsRequest,
+  fetchStatsSuccess,
+  fetchStatsFailure,
   logout,
   checkAutoLogin,
   autoLoginCheckedDone,

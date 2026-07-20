@@ -4,6 +4,8 @@ export type {
   SignUpPayload,
   LoginPayload,
   RefreshPayload,
+  UpdateProfilePayload,
   AuthUser,
   AuthResponse,
+  UserStats,
 } from './authService';

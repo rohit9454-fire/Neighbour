@@ -1,22 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Switch } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useDispatch, useSelector } from 'react-redux';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootState } from '../../store';
-import { logout } from '../../store/slices/authSlice';
+import { logout, fetchStatsRequest } from '../../store/slices/authSlice';
 import { C } from '../../theme';
+import { ProfileStackParamList } from '../../types';
+
+type Props = NativeStackScreenProps<ProfileStackParamList, 'ProfileMain'>;
 
 const INTERESTS = ['🎾 Badminton', '🏏 Cricket', '🏃 Running', '🚴 Cycling', '🚗 Carpool', '👥 Study Group', '🐾 Dog Walking'];
 const APP_VERSION = '1.0.0';
 
-export default function ProfileScreen(): React.JSX.Element {
+export default function ProfileScreen({ navigation }: Props): React.JSX.Element {
   const dispatch = useDispatch();
   const user = useSelector((state: RootState) => state.auth.user);
-  const myJoined = useSelector((state: RootState) => state.activities.myJoined);
-  const myCreated = useSelector((state: RootState) => state.activities.myCreated);
+  const stats = useSelector((state: RootState) => state.auth.stats);
   const [notifEnabled, setNotifEnabled] = useState(true);
   const [locationEnabled, setLocationEnabled] = useState(true);
+
+  useEffect(() => {
+    dispatch(fetchStatsRequest());
+  }, [dispatch]);
 
   const handleLogout = () => {
     Alert.alert('Logout', 'Are you sure you want to logout?', [
@@ -24,7 +31,7 @@ export default function ProfileScreen(): React.JSX.Element {
       { text: 'Logout', style: 'destructive', onPress: () => dispatch(logout()) },
     ]);
   };
-
+  
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
@@ -43,21 +50,25 @@ export default function ProfileScreen(): React.JSX.Element {
             <Text style={styles.society}>{user?.society ?? 'Green Valley'} · {user?.sector ?? 'Sector 45'}</Text>
           </View>
           <Text style={styles.email}>{user?.email}</Text>
+          <TouchableOpacity style={styles.editBtn} onPress={() => navigation.navigate('EditProfile')} activeOpacity={0.8}>
+            <Icon name="pencil-outline" size={15} color={C.btnActive} />
+            <Text style={styles.editBtnText}>Edit Profile</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
-            <Text style={styles.statVal}>{myJoined.length}</Text>
+            <Text style={styles.statVal}>{stats?.joined ?? '—'}</Text>
             <Text style={styles.statLbl}>Joined</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
-            <Text style={styles.statVal}>{myCreated.length}</Text>
+            <Text style={styles.statVal}>{stats?.created ?? '—'}</Text>
             <Text style={styles.statLbl}>Created</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
-            <Text style={styles.statVal}>24</Text>
+            <Text style={styles.statVal}>{stats?.neighbours ?? '—'}</Text>
             <Text style={styles.statLbl}>Neighbours</Text>
           </View>
         </View>
@@ -133,7 +144,9 @@ const styles = StyleSheet.create({
   cameraBtn: { position: 'absolute', bottom: 0, right: 0, width: 28, height: 28, borderRadius: 14, backgroundColor: C.btnInactive, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: C.bg },
   name: { fontSize: 22, fontWeight: '700', color: C.textPrimary, marginBottom: 4 },
   society: { fontSize: 13, color: C.textSecondary },
-  email: { fontSize: 12, color: C.textMuted },
+  email: { fontSize: 12, color: C.textMuted, marginBottom: 12 },
+  editBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: C.border, backgroundColor: C.bgCard },
+  editBtnText: { fontSize: 13, fontWeight: '600', color: C.btnActive },
 
   statsRow: { flexDirection: 'row', backgroundColor: C.bgCard, marginHorizontal: 20, borderRadius: 16, paddingVertical: 16, marginBottom: 24, shadowColor: C.shadow, shadowOpacity: 0.08, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
   statItem: { flex: 1, alignItems: 'center' },

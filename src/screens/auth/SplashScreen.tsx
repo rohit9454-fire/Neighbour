@@ -16,6 +16,7 @@ export default function SplashScreen({ navigation }: Props): React.JSX.Element {
     }, 100);
     return () => clearTimeout(timeout);
   }, []);
+  
 
   const handleAnimationFinish = useCallback((): void => {
     if (hasNavigated.current) return;

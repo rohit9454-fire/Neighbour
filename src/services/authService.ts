@@ -17,6 +17,14 @@ export interface RefreshPayload {
   refreshToken: string;
 }
 
+export interface UpdateProfilePayload {
+  name?: string;
+  society?: string;
+  sector?: string;
+  interests?: string[];
+  avatarUrl?: string;
+}
+
 // ─── API Responses ────────────────────────────────────────────────────────────
 
 export interface AuthUser {
@@ -34,6 +42,12 @@ export interface AuthResponse {
   token: string;
   refreshToken: string;
   user: AuthUser;
+}
+
+export interface UserStats {
+  created: number;
+  joined: number;
+  neighbours: number;
 }
 
 // ─── Auth API Calls ───────────────────────────────────────────────────────────
@@ -74,6 +88,16 @@ export const authService = {
    */
   getMe: async (): Promise<AuthUser> => {
     const response = await apiClient.get<AuthUser>('/auth/me');
+    return response.data;
+  },
+
+  updateMe: async (payload: UpdateProfilePayload): Promise<AuthUser> => {
+    const response = await apiClient.patch<AuthUser>('/users/me', payload);
+    return response.data;
+  },
+
+  getMyStats: async (): Promise<UserStats> => {
+    const response = await apiClient.get<UserStats>('/users/me/stats');
     return response.data;
   },
 };
