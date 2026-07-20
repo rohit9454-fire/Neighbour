@@ -1,11 +1,18 @@
 // ─── Domain Models ────────────────────────────────────────────────────────────
 
 export interface User {
+  // Core (always present)
   name: string;
   email: string;
-  society?: string;
-  sector?: string;
+  // From API
+  id?: string;
+  society?: string | null;
+  sector?: string | null;
   interests?: string[];
+  avatarUrl?: string | null;
+  role?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export type EventCategory = 'Sports' | 'Culture' | 'Social' | 'Hobby' | 'Other';
