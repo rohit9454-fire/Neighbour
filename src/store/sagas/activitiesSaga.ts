@@ -14,6 +14,9 @@ import {
   joinActivityRequest,
   joinActivitySuccess,
   joinActivityFailure,
+  deleteActivityRequest,
+  deleteActivitySuccess,
+  deleteActivityFailure,
 } from '../slices/activitiesSlice';
 import { Activity } from '../../types';
 
@@ -64,10 +67,21 @@ function* handleJoinActivity(action: ReturnType<typeof joinActivityRequest>) {
   }
 }
 
+function* handleDeleteActivity(action: ReturnType<typeof deleteActivityRequest>) {
+  try {
+    yield call(activitiesService.deleteActivity, action.payload);
+    yield put(deleteActivitySuccess(action.payload));
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to delete activity.';
+    yield put(deleteActivityFailure(message));
+  }
+}
+
 export function* activitiesSaga() {
   yield takeLatest(fetchActivitiesRequest.type, handleFetchActivities);
   yield takeLatest(fetchActivitiesRefresh.type, handleFetchActivities);
   yield takeLatest(createActivityRequest.type, handleCreateActivity);
   yield takeLatest(updateActivityRequest.type, handleUpdateActivity);
   yield takeLatest(joinActivityRequest.type, handleJoinActivity);
+  yield takeLatest(deleteActivityRequest.type, handleDeleteActivity);
 }

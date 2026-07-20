@@ -20,6 +20,9 @@ interface ActivitiesState {
   joiningIds: string[];
   joinError: string | null;
   lastJoinedId: string | null;
+  isDeleting: boolean;
+  deleteError: string | null;
+  lastDeletedId: string | null;
   error: string | null;
 }
 
@@ -38,6 +41,9 @@ const initialState: ActivitiesState = {
   joiningIds: [],
   joinError: null,
   lastJoinedId: null,
+  isDeleting: false,
+  deleteError: null,
+  lastDeletedId: null,
   error: null,
 };
 
@@ -139,6 +145,28 @@ const activitiesSlice = createSlice({
       state.updateError = null;
       state.lastUpdatedId = null;
     },
+    deleteActivityRequest: (state, _action: PayloadAction<string>) => {
+      state.isDeleting = true;
+      state.deleteError = null;
+      state.lastDeletedId = null;
+    },
+    deleteActivitySuccess: (state, action: PayloadAction<string>) => {
+      const activityId = action.payload;
+      state.activities = state.activities.filter(activity => activity.id !== activityId);
+      state.myCreated = state.myCreated.filter(id => id !== activityId);
+      state.myJoined = state.myJoined.filter(id => id !== activityId);
+      state.joiningIds = state.joiningIds.filter(id => id !== activityId);
+      state.isDeleting = false;
+      state.lastDeletedId = activityId;
+    },
+    deleteActivityFailure: (state, action: PayloadAction<string>) => {
+      state.isDeleting = false;
+      state.deleteError = action.payload;
+    },
+    clearDeleteActivityState: (state) => {
+      state.deleteError = null;
+      state.lastDeletedId = null;
+    },
     setRefreshing: (state, action: PayloadAction<boolean>) => {
       state.refreshing = action.payload;
     },
@@ -165,7 +193,8 @@ export const {
   clearJoinActivityState, leaveActivity, addActivity, createActivityRequest,
   createActivitySuccess, createActivityFailure, clearCreateActivityState,
   updateActivityRequest, updateActivitySuccess, updateActivityFailure,
-  clearUpdateActivityState, setRefreshing,
+  clearUpdateActivityState, deleteActivityRequest, deleteActivitySuccess,
+  deleteActivityFailure, clearDeleteActivityState, setRefreshing,
   setLoading, cancelActivity, deleteActivity,
 } = activitiesSlice.actions;
 

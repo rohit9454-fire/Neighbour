@@ -8,6 +8,8 @@ import { RootState } from '../../store';
 import { ActivitiesStackParamList } from '../../types';
 import {
   clearJoinActivityState,
+  clearDeleteActivityState,
+  deleteActivityRequest,
   joinActivityRequest,
   selectActivityById,
   selectIsCreated,
@@ -25,7 +27,9 @@ export default function ActivityDetailScreen({ route, navigation }: Props): Reac
   const activity = useSelector(selectActivityById(activityId));
   const joinedLocally = useSelector(selectIsJoined(activityId));
   const isCreated = useSelector(selectIsCreated(activityId));
-  const { joiningIds, joinError, lastJoinedId } = useSelector(
+  const {
+    joiningIds, joinError, lastJoinedId, isDeleting, deleteError, lastDeletedId,
+  } = useSelector(
     (state: RootState) => state.activities,
   );
   const [bookmarked, setBookmarked] = useState(false);
@@ -41,6 +45,21 @@ export default function ActivityDetailScreen({ route, navigation }: Props): Reac
     }));
     dispatch(clearJoinActivityState());
   }, [activity, activityId, dispatch, lastJoinedId, user]);
+
+  useEffect(() => {
+    if (lastDeletedId !== activityId) return;
+
+    dispatch(clearDeleteActivityState());
+    navigation.goBack();
+  }, [activityId, dispatch, lastDeletedId, navigation]);
+
+  useEffect(() => {
+    if (!deleteError) return;
+
+    Alert.alert('Could not delete activity', deleteError, [
+      { text: 'OK', onPress: () => dispatch(clearDeleteActivityState()) },
+    ]);
+  }, [deleteError, dispatch]);
 
   if (!activity) {
     return <SafeAreaView style={styles.container}><Text style={styles.notFound}>Activity not found</Text></SafeAreaView>;
@@ -64,6 +83,21 @@ export default function ActivityDetailScreen({ route, navigation }: Props): Reac
   };
 
   const handleReport = () => Alert.alert('Report Activity', 'Thank you for your report. We will review it shortly.');
+
+  const handleDelete = () => {
+    Alert.alert(
+      'Delete Activity',
+      'This will permanently remove the activity for all participants.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => dispatch(deleteActivityRequest(activityId)),
+        },
+      ],
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -112,12 +146,22 @@ export default function ActivityDetailScreen({ route, navigation }: Props): Reac
           </View>
 
           {isOwner && (
-            <TouchableOpacity
-              style={styles.editBtn}
-              onPress={() => navigation.navigate('EditActivity', { activityId })}>
-              <Icon name="pencil-outline" size={18} color={C.btnActive} />
-              <Text style={styles.editBtnText}>Edit Activity</Text>
-            </TouchableOpacity>
+            <View style={styles.ownerActions}>
+              <TouchableOpacity
+                style={styles.editBtn}
+                onPress={() => navigation.navigate('EditActivity', { activityId })}
+                disabled={isDeleting}>
+                <Icon name="pencil-outline" size={18} color={C.btnActive} />
+                <Text style={styles.editBtnText}>Edit Activity</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.deleteBtn, isDeleting && styles.deleteBtnDisabled]}
+                onPress={handleDelete}
+                disabled={isDeleting}>
+                <Icon name="delete-outline" size={18} color={C.danger} />
+                <Text style={styles.deleteBtnText}>{isDeleting ? 'Deleting…' : 'Delete Activity'}</Text>
+              </TouchableOpacity>
+            </View>
           )}
 
           <View style={styles.section}>
@@ -270,6 +314,10 @@ const styles = StyleSheet.create({
   chatBtnText: { fontSize: 14, color: C.btnActive, fontWeight: '600' },
   editBtn: { backgroundColor: C.bgCard, borderRadius: 14, padding: 16, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, marginBottom: 12, borderWidth: 1, borderColor: C.border },
   editBtnText: { fontSize: 14, color: C.btnActive, fontWeight: '600' },
+  ownerActions: { gap: 12, marginBottom: 12 },
+  deleteBtn: { backgroundColor: C.dangerBg, borderRadius: 14, padding: 16, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, borderWidth: 1, borderColor: C.danger },
+  deleteBtnDisabled: { opacity: 0.7 },
+  deleteBtnText: { fontSize: 14, color: C.danger, fontWeight: '600' },
 
   bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 20, backgroundColor: C.bg, borderTopWidth: 1, borderTopColor: C.border },
   joinBtn: { backgroundColor: C.btnInactive, borderRadius: 16, height: 56, justifyContent: 'center', alignItems: 'center' },

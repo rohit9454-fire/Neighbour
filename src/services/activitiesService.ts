@@ -51,4 +51,8 @@ export const activitiesService = {
     if ('activity' in response.data) return response.data.activity;
     return 'data' in response.data ? response.data.data : response.data;
   },
+
+  deleteActivity: async (activityId: string): Promise<void> => {
+    await apiClient.delete(`/activities/${activityId}`);
+  },
 };
