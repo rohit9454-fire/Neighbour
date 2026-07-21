@@ -283,8 +283,16 @@ function* handleFetchStats() {
 // ─── Logout ───────────────────────────────────────────────────────────────────
 
 function* handleLogout() {
-  yield* clearAuthData();
-  clearAuthToken();
+  try {
+    // Local logout must still complete if the device is offline or the session
+    // has already expired, so the server call is deliberately best-effort.
+    yield call(authService.logout);
+  } catch {
+    // Nothing to do: clearing local credentials below safely signs the user out.
+  } finally {
+    yield* clearAuthData();
+    clearAuthToken();
+  }
 }
 
 // ─── Root Auth Saga ───────────────────────────────────────────────────────────

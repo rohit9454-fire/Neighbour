@@ -1,68 +1,78 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { ChatMessage } from '../../types';
 
-const MOCK_MESSAGES: ChatMessage[] = [
-  {
-    id: 'sys1', activityId: '1', senderId: 'system', senderName: 'System',
-    text: 'Rahul created this activity', timestamp: '2024-06-20T05:00:00Z',
-    type: 'system', delivered: true,
-  },
-  {
-    id: 'm1', activityId: '1', senderId: 'rahul', senderName: 'Rahul',
-    text: 'Hey everyone! Court is booked for tomorrow 🎾', timestamp: '2024-06-20T06:00:00Z',
-    type: 'text', delivered: true, readBy: ['priya', 'amit'],
-    reactions: { '👍': ['priya', 'amit'] },
-  },
-  {
-    id: 'm2', activityId: '1', senderId: 'priya', senderName: 'Priya',
-    text: "I'll be there! Should I bring extra shuttlecocks?", timestamp: '2024-06-20T06:05:00Z',
-    type: 'text', delivered: true, readBy: ['rahul'],
-  },
-  {
-    id: 'm3', activityId: '1', senderId: 'rahul', senderName: 'Rahul',
-    text: 'Yes please! Bring 2-3 if you have them 🙏', timestamp: '2024-06-20T06:07:00Z',
-    type: 'text', delivered: true, readBy: ['priya'],
-  },
-  {
-    id: 'sys2', activityId: '1', senderId: 'system', senderName: 'System',
-    text: 'Amit joined the activity', timestamp: '2024-06-20T07:00:00Z',
-    type: 'system', delivered: true,
-  },
-  {
-    id: 'm4', activityId: '1', senderId: 'amit', senderName: 'Amit',
-    text: 'Excited! See you all at 6:30 AM 💪', timestamp: '2024-06-20T07:01:00Z',
-    type: 'text', delivered: true, readBy: ['rahul'],
-    reactions: { '🔥': ['rahul', 'priya'] },
-  },
-  {
-    id: 'pin1', activityId: '1', senderId: 'rahul', senderName: 'Rahul',
-    text: '📌 Court Reserved – Hall B, Ground Floor. Entry from Gate 3.',
-    timestamp: '2024-06-20T08:00:00Z', type: 'system', delivered: true, pinned: true,
-  },
-  // Activity 2 messages
-  {
-    id: 'sys3', activityId: '2', senderId: 'system', senderName: 'System',
-    text: 'Vikram created this activity', timestamp: '2024-06-19T10:00:00Z',
-    type: 'system', delivered: true,
-  },
-  {
-    id: 'm5', activityId: '2', senderId: 'vikram', senderName: 'Vikram',
-    text: 'Ground is booked, see you all tomorrow! 🏏', timestamp: '2024-06-19T10:05:00Z',
-    type: 'text', delivered: true, readBy: ['suresh', 'deepak'],
-  },
-];
-
 interface ChatState {
   messages: ChatMessage[];
   typingUsers: Record<string, string[]>;
+  loadingActivityIds: string[];
+  errorsByActivity: Record<string, string | undefined>;
+  sendingMessageIds: string[];
+  sendErrorsByActivity: Record<string, string | undefined>;
 }
 
 const chatSlice = createSlice({
   name: 'chat',
-  initialState: { messages: MOCK_MESSAGES, typingUsers: {} } as ChatState,
+  initialState: {
+    messages: [],
+    typingUsers: {},
+    loadingActivityIds: [],
+    errorsByActivity: {},
+    sendingMessageIds: [],
+    sendErrorsByActivity: {},
+  } as ChatState,
   reducers: {
-    sendMessage: (state, action: PayloadAction<ChatMessage>) => {
+    fetchMessagesRequest: (state, action: PayloadAction<string>) => {
+      if (!state.loadingActivityIds.includes(action.payload)) {
+        state.loadingActivityIds.push(action.payload);
+      }
+      delete state.errorsByActivity[action.payload];
+    },
+    fetchMessagesSuccess: (
+      state,
+      action: PayloadAction<{ activityId: string; messages: ChatMessage[] }>,
+    ) => {
+      const { activityId, messages } = action.payload;
+      state.messages = [
+        ...state.messages.filter(message => message.activityId !== activityId),
+        ...messages,
+      ];
+      state.loadingActivityIds = state.loadingActivityIds.filter(id => id !== activityId);
+    },
+    fetchMessagesFailure: (
+      state,
+      action: PayloadAction<{ activityId: string; message: string }>,
+    ) => {
+      state.loadingActivityIds = state.loadingActivityIds.filter(id => id !== action.payload.activityId);
+      state.errorsByActivity[action.payload.activityId] = action.payload.message;
+    },
+    sendMessageRequest: (state, action: PayloadAction<ChatMessage>) => {
       state.messages.push(action.payload);
+      state.sendingMessageIds.push(action.payload.id);
+      delete state.sendErrorsByActivity[action.payload.activityId];
+    },
+    sendMessageSuccess: (
+      state,
+      action: PayloadAction<{ tempId: string; message: ChatMessage | null }>,
+    ) => {
+      const index = state.messages.findIndex(message => message.id === action.payload.tempId);
+      if (index >= 0) {
+        state.messages[index] = action.payload.message ?? {
+          ...state.messages[index],
+          delivered: true,
+        };
+      }
+      state.sendingMessageIds = state.sendingMessageIds.filter(id => id !== action.payload.tempId);
+    },
+    sendMessageFailure: (
+      state,
+      action: PayloadAction<{ tempId: string; activityId: string; message: string }>,
+    ) => {
+      state.messages = state.messages.filter(message => message.id !== action.payload.tempId);
+      state.sendingMessageIds = state.sendingMessageIds.filter(id => id !== action.payload.tempId);
+      state.sendErrorsByActivity[action.payload.activityId] = action.payload.message;
+    },
+    clearSendMessageError: (state, action: PayloadAction<string>) => {
+      delete state.sendErrorsByActivity[action.payload];
     },
     addReaction: (state, action: PayloadAction<{ messageId: string; emoji: string; userId: string }>) => {
       const msg = state.messages.find(m => m.id === action.payload.messageId);
@@ -89,7 +99,19 @@ const chatSlice = createSlice({
   },
 });
 
-export const { sendMessage, addReaction, setTyping, markDelivered, pinMessage } = chatSlice.actions;
+export const {
+  fetchMessagesRequest,
+  fetchMessagesSuccess,
+  fetchMessagesFailure,
+  sendMessageRequest,
+  sendMessageSuccess,
+  sendMessageFailure,
+  clearSendMessageError,
+  addReaction,
+  setTyping,
+  markDelivered,
+  pinMessage,
+} = chatSlice.actions;
 
 export const selectMessagesByActivity = (activityId: string) =>
   (state: { chat: ChatState }) =>

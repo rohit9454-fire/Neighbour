@@ -6,7 +6,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootState } from '../../store';
 import { ActivitiesStackParamList, Activity } from '../../types';
-import { selectMyJoined, selectMyCreated, leaveActivity, cancelActivity, deleteActivity } from '../../store/slices/activitiesSlice';
+import { selectMyJoined, selectMyCreated, leaveActivityRequest, cancelActivity, deleteActivity } from '../../store/slices/activitiesSlice';
 import { C } from '../../theme';
 
 type Props = NativeStackScreenProps<ActivitiesStackParamList, 'MyActivities'>;
@@ -35,7 +35,7 @@ export default function MyActivitiesScreen({ navigation }: Props): React.JSX.Ele
   const handleLeave = (activity: Activity) => {
     Alert.alert('Leave Activity', `Leave "${activity.title}"?`, [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Leave', style: 'destructive', onPress: () => user && dispatch(leaveActivity({ activityId: activity.id, userId: user.id ?? '' })) },
+      { text: 'Leave', style: 'destructive', onPress: () => user && dispatch(leaveActivityRequest({ activityId: activity.id, userId: user.id ?? '' })) },
     ]);
   };
 

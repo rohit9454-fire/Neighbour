@@ -145,6 +145,7 @@ export type HomeStackParamList = {
   EventDetail: { event: Event };
   CreateEvent: undefined;
   ActivityDetail: { activityId: string };
+  ActivityChat: { activityId: string; activityTitle: string };
   EditActivity: { activityId: string };
   Notifications: undefined;
 };

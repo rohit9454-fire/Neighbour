@@ -52,6 +52,15 @@ export const activitiesService = {
     return 'data' in response.data ? response.data.data : response.data;
   },
 
+  leaveActivity: async (activityId: string): Promise<Activity | null> => {
+    const response = await apiClient.post<JoinActivityResponse | null>(
+      `/activities/${activityId}/leave`,
+    );
+    if (!response.data) return null;
+    if ('activity' in response.data) return response.data.activity;
+    return 'data' in response.data ? response.data.data : response.data;
+  },
+
   deleteActivity: async (activityId: string): Promise<void> => {
     await apiClient.delete(`/activities/${activityId}`);
   },

@@ -20,6 +20,8 @@ interface ActivitiesState {
   joiningIds: string[];
   joinError: string | null;
   lastJoinedId: string | null;
+  leavingIds: string[];
+  leaveError: string | null;
   isDeleting: boolean;
   deleteError: string | null;
   lastDeletedId: string | null;
@@ -41,6 +43,8 @@ const initialState: ActivitiesState = {
   joiningIds: [],
   joinError: null,
   lastJoinedId: null,
+  leavingIds: [],
+  leaveError: null,
   isDeleting: false,
   deleteError: null,
   lastDeletedId: null,
@@ -93,12 +97,40 @@ const activitiesSlice = createSlice({
       state.joinError = null;
       state.lastJoinedId = null;
     },
-    leaveActivity: (state, action: PayloadAction<{ activityId: string; userId: string }>) => {
-      const activity = state.activities.find(a => a.id === action.payload.activityId);
-      if (activity) {
-        activity.participants = activity.participants.filter(p => p.userId !== action.payload.userId);
+    leaveActivityRequest: (
+      state,
+      action: PayloadAction<{ activityId: string; userId: string }>,
+    ) => {
+      if (!state.leavingIds.includes(action.payload.activityId)) {
+        state.leavingIds.push(action.payload.activityId);
       }
-      state.myJoined = state.myJoined.filter(id => id !== action.payload.activityId);
+      state.leaveError = null;
+    },
+    leaveActivitySuccess: (
+      state,
+      action: PayloadAction<{ activityId: string; userId: string; activity: Activity | null }>,
+    ) => {
+      const { activityId, userId, activity } = action.payload;
+      const index = state.activities.findIndex(item => item.id === activityId);
+      if (activity && index >= 0) {
+        state.activities[index] = activity;
+      } else if (index >= 0) {
+        state.activities[index].participants = state.activities[index].participants.filter(
+          participant => participant.userId !== userId,
+        );
+      }
+      state.myJoined = state.myJoined.filter(id => id !== activityId);
+      state.leavingIds = state.leavingIds.filter(id => id !== activityId);
+    },
+    leaveActivityFailure: (
+      state,
+      action: PayloadAction<{ activityId: string; message: string }>,
+    ) => {
+      state.leavingIds = state.leavingIds.filter(id => id !== action.payload.activityId);
+      state.leaveError = action.payload.message;
+    },
+    clearLeaveActivityState: (state) => {
+      state.leaveError = null;
     },
     addActivity: (state, action: PayloadAction<Activity>) => {
       state.activities.unshift(action.payload);
@@ -190,7 +222,8 @@ export const {
   fetchActivitiesFailure,
   fetchActivitiesRefresh,
   joinActivityRequest, joinActivitySuccess, joinActivityFailure,
-  clearJoinActivityState, leaveActivity, addActivity, createActivityRequest,
+  clearJoinActivityState, leaveActivityRequest, leaveActivitySuccess,
+  leaveActivityFailure, clearLeaveActivityState, addActivity, createActivityRequest,
   createActivitySuccess, createActivityFailure, clearCreateActivityState,
   updateActivityRequest, updateActivitySuccess, updateActivityFailure,
   clearUpdateActivityState, deleteActivityRequest, deleteActivitySuccess,

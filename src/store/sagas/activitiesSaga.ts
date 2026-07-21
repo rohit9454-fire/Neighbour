@@ -14,6 +14,9 @@ import {
   joinActivityRequest,
   joinActivitySuccess,
   joinActivityFailure,
+  leaveActivityRequest,
+  leaveActivitySuccess,
+  leaveActivityFailure,
   deleteActivityRequest,
   deleteActivitySuccess,
   deleteActivityFailure,
@@ -67,6 +70,19 @@ function* handleJoinActivity(action: ReturnType<typeof joinActivityRequest>) {
   }
 }
 
+function* handleLeaveActivity(action: ReturnType<typeof leaveActivityRequest>) {
+  try {
+    const activity: Activity | null = yield call(
+      activitiesService.leaveActivity,
+      action.payload.activityId,
+    );
+    yield put(leaveActivitySuccess({ ...action.payload, activity }));
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to leave activity.';
+    yield put(leaveActivityFailure({ activityId: action.payload.activityId, message }));
+  }
+}
+
 function* handleDeleteActivity(action: ReturnType<typeof deleteActivityRequest>) {
   try {
     yield call(activitiesService.deleteActivity, action.payload);
@@ -83,5 +99,6 @@ export function* activitiesSaga() {
   yield takeLatest(createActivityRequest.type, handleCreateActivity);
   yield takeLatest(updateActivityRequest.type, handleUpdateActivity);
   yield takeLatest(joinActivityRequest.type, handleJoinActivity);
+  yield takeLatest(leaveActivityRequest.type, handleLeaveActivity);
   yield takeLatest(deleteActivityRequest.type, handleDeleteActivity);
 }

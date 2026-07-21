@@ -1,12 +1,11 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import {
   BottomTabParamList,
   HomeStackParamList,
-  GroupsStackParamList,
   ActivitiesStackParamList,
   ProfileStackParamList,
 } from '../types';
@@ -25,10 +24,6 @@ import EditActivityScreen from '../screens/main/EditActivityScreen';
 import MyActivitiesScreen from '../screens/main/MyActivitiesScreen';
 import ActivityChatScreen from '../screens/main/ActivityChatScreen';
 
-// Screens – Groups stack (existing)
-import GroupsScreen from '../screens/main/GroupsScreen';
-import GroupDetailScreen from '../screens/main/GroupDetailScreen';
-
 // Screens – Profile
 import ProfileScreen from '../screens/main/ProfileScreen';
 import EditProfileScreen from '../screens/main/EditProfileScreen';
@@ -36,7 +31,6 @@ import EditProfileScreen from '../screens/main/EditProfileScreen';
 const Tab = createBottomTabNavigator<BottomTabParamList>();
 const HomeStack = createNativeStackNavigator<HomeStackParamList>();
 const ActivitiesStack = createNativeStackNavigator<ActivitiesStackParamList>();
-const GroupsStack = createNativeStackNavigator<GroupsStackParamList>();
 const ProfileStack = createNativeStackNavigator<ProfileStackParamList>();
 
 const STACK_OPTS = { headerShown: false };
@@ -48,6 +42,7 @@ function HomeStackNavigator(): React.JSX.Element {
       <HomeStack.Screen name="EventDetail" component={EventDetailScreen} />
       <HomeStack.Screen name="CreateEvent" component={CreateEventScreen} />
       <HomeStack.Screen name="ActivityDetail" component={ActivityDetailScreen} />
+      <HomeStack.Screen name="ActivityChat" component={ActivityChatScreen} />
       <HomeStack.Screen name="EditActivity" component={EditActivityScreen} />
       <HomeStack.Screen name="Notifications" component={NotificationsScreen} />
     </HomeStack.Navigator>
@@ -64,18 +59,6 @@ function ActivitiesStackNavigator(): React.JSX.Element {
       <ActivitiesStack.Screen name="MyActivities" component={MyActivitiesScreen} />
       <ActivitiesStack.Screen name="ActivityChat" component={ActivityChatScreen} />
     </ActivitiesStack.Navigator>
-  );
-}
-
-function GroupsStackNavigator(): React.JSX.Element {
-  return (
-    <GroupsStack.Navigator screenOptions={STACK_OPTS}>
-      <GroupsStack.Screen name="GroupsMain" component={GroupsScreen} />
-      <GroupsStack.Screen name="GroupDetail" component={GroupDetailScreen} />
-      <GroupsStack.Screen name="CreateGroup">
-        {() => <CreateActivityScreen navigation={undefined as any} route={undefined as any} />}
-      </GroupsStack.Screen>
-    </GroupsStack.Navigator>
   );
 }
 

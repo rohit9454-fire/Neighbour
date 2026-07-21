@@ -8,9 +8,11 @@ import { RootState } from '../../store';
 import { ActivitiesStackParamList } from '../../types';
 import {
   clearJoinActivityState,
+  clearLeaveActivityState,
   clearDeleteActivityState,
   deleteActivityRequest,
   joinActivityRequest,
+  leaveActivityRequest,
   selectActivityById,
   selectIsCreated,
   selectIsJoined,
@@ -28,7 +30,8 @@ export default function ActivityDetailScreen({ route, navigation }: Props): Reac
   const joinedLocally = useSelector(selectIsJoined(activityId));
   const isCreated = useSelector(selectIsCreated(activityId));
   const {
-    joiningIds, joinError, lastJoinedId, isDeleting, deleteError, lastDeletedId,
+    joiningIds, joinError, lastJoinedId, leavingIds, leaveError,
+    isDeleting, deleteError, lastDeletedId,
   } = useSelector(
     (state: RootState) => state.activities,
   );
@@ -61,6 +64,14 @@ export default function ActivityDetailScreen({ route, navigation }: Props): Reac
     ]);
   }, [deleteError, dispatch]);
 
+  useEffect(() => {
+    if (!leaveError) return;
+
+    Alert.alert('Could not leave activity', leaveError, [
+      { text: 'OK', onPress: () => dispatch(clearLeaveActivityState()) },
+    ]);
+  }, [dispatch, leaveError]);
+
   if (!activity) {
     return <SafeAreaView style={styles.container}><Text style={styles.notFound}>Activity not found</Text></SafeAreaView>;
   }
@@ -72,6 +83,7 @@ export default function ActivityDetailScreen({ route, navigation }: Props): Reac
     participant => participant.userId === user?.id,
   );
   const isJoining = joiningIds.includes(activityId);
+  const isLeaving = leavingIds.includes(activityId);
   const sanitize = (s: string) => s.replace(/[\r\n<>"'`]/g, ' ').trim();
 
   const handleJoin = () => {
@@ -83,6 +95,20 @@ export default function ActivityDetailScreen({ route, navigation }: Props): Reac
   };
 
   const handleReport = () => Alert.alert('Report Activity', 'Thank you for your report. We will review it shortly.');
+
+  const handleLeave = () => {
+    Alert.alert('Leave Activity', 'Are you sure you want to leave?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Leave',
+        style: 'destructive',
+        onPress: () => dispatch(leaveActivityRequest({
+          activityId,
+          userId: user?.id ?? '',
+        })),
+      },
+    ]);
+  };
 
   const handleDelete = () => {
     Alert.alert(
@@ -238,15 +264,19 @@ export default function ActivityDetailScreen({ route, navigation }: Props): Reac
             <Text style={styles.joinedBtnText}>Your Activity</Text>
           </View>
         ) : isJoined ? (
-          <View style={styles.joinedBtn}>
-            <Text style={styles.joinedBtnText}>✓ Joined</Text>
-          </View>
+          <TouchableOpacity
+            style={[styles.leaveBtn, isLeaving && styles.leaveBtnDisabled]}
+            onPress={handleLeave}
+            disabled={isLeaving}>
+            <Text style={styles.leaveBtnText}>{isLeaving ? 'Leaving…' : 'Leave Activity'}</Text>
+          </TouchableOpacity>
         ) : (
           <TouchableOpacity style={[styles.joinBtn, isFull && styles.joinBtnDisabled]} onPress={handleJoin} disabled={isFull || isJoining}>
             <Text style={styles.joinBtnText}>{isFull ? 'Activity Full' : isJoining ? 'Joining…' : 'Join Activity →'}</Text>
           </TouchableOpacity>
         )}
         {joinError && <Text style={styles.joinError}>{joinError}</Text>}
+        {leaveError && <Text style={styles.joinError}>{leaveError}</Text>}
       </View>
     </SafeAreaView>
   );
@@ -327,5 +357,6 @@ const styles = StyleSheet.create({
   joinedBtnText: { color: C.success, fontSize: 16, fontWeight: '700' },
   joinError: { color: C.danger, fontSize: 12, marginTop: 8, textAlign: 'center' },
   leaveBtn: { backgroundColor: C.dangerBg, borderRadius: 16, height: 56, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: C.danger },
+  leaveBtnDisabled: { opacity: 0.7 },
   leaveBtnText: { fontSize: 16, fontWeight: '700', color: C.danger },
 });

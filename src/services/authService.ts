@@ -81,6 +81,11 @@ export const authService = {
     return response.data;
   },
 
+  /** Invalidates the current server session. The Bearer token is added by apiClient. */
+  logout: async (): Promise<void> => {
+    await apiClient.post('/auth/logout');
+  },
+
   /**
    * GET /auth/me
    * Returns the full profile of the currently authenticated user.

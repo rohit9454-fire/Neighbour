@@ -1,5 +1,6 @@
 export { default as apiClient, setAuthToken, clearAuthToken, injectStore } from './apiClient';
 export { authService } from './authService';
+export { chatService } from './chatService';
 export type {
   SignUpPayload,
   LoginPayload,

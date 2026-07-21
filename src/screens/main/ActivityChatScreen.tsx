@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
-  View, Text, FlatList, TouchableOpacity, StyleSheet,
-  TextInput, KeyboardAvoidingView, Platform, ListRenderItemInfo,
+  View, Text, FlatList, TouchableOpacity, StyleSheet, Alert,
+  TextInput, KeyboardAvoidingView, Platform, ListRenderItemInfo, ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -9,7 +10,14 @@ import { useSelector, useDispatch } from 'react-redux';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootState } from '../../store';
 import { ActivitiesStackParamList, ChatMessage } from '../../types';
-import { selectMessagesByActivity, selectPinnedMessages, sendMessage, addReaction } from '../../store/slices/chatSlice';
+import {
+  addReaction,
+  clearSendMessageError,
+  fetchMessagesRequest,
+  selectMessagesByActivity,
+  selectPinnedMessages,
+  sendMessageRequest,
+} from '../../store/slices/chatSlice';
 import { C } from '../../theme';
 
 type Props = NativeStackScreenProps<ActivitiesStackParamList, 'ActivityChat'>;
@@ -35,7 +43,7 @@ function MessageBubble({ msg, isMe, onReact }: {
     <View style={[styles.msgRow, isMe && styles.msgRowMe]}>
       {!isMe && (
         <View style={styles.msgAvatar}>
-          <Text style={styles.msgAvatarText}>{msg.senderName[0]}</Text>
+          <Text style={styles.msgAvatarText}>{msg.senderName?.[0] ?? '?'}</Text>
         </View>
       )}
       <View style={[styles.msgWrap, isMe && styles.msgWrapMe]}>
@@ -88,6 +96,22 @@ export default function ActivityChatScreen({ route, navigation }: Props): React.
   const user = useSelector((state: RootState) => state.auth.user);
   const messages = useSelector(selectMessagesByActivity(activityId));
   const pinnedMessages = useSelector(selectPinnedMessages(activityId));
+  const isLoading = useSelector((state: RootState) =>
+    state.chat.loadingActivityIds.includes(activityId),
+  );
+  const loadError = useSelector(
+    (state: RootState) => state.chat.errorsByActivity[activityId],
+  );
+  const isSending = useSelector((state: RootState) =>
+    state.chat.sendingMessageIds.some(messageId =>
+      state.chat.messages.some(
+        message => message.id === messageId && message.activityId === activityId,
+      ),
+    ),
+  );
+  const sendError = useSelector(
+    (state: RootState) => state.chat.sendErrorsByActivity[activityId],
+  );
   const [text, setText] = useState('');
   const [showPinned, setShowPinned] = useState(false);
   const listRef = useRef<FlatList>(null);
@@ -96,20 +120,32 @@ export default function ActivityChatScreen({ route, navigation }: Props): React.
     setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
   }, [messages.length]);
 
+  useEffect(() => {
+    dispatch(fetchMessagesRequest(activityId));
+  }, [activityId, dispatch]);
+
+  useEffect(() => {
+    if (!sendError) return;
+
+    Alert.alert('Could not send message', sendError, [
+      { text: 'OK', onPress: () => dispatch(clearSendMessageError(activityId)) },
+    ]);
+  }, [activityId, dispatch, sendError]);
+
   const handleSend = () => {
     if (!text.trim() || !user) return;
-    dispatch(sendMessage({
+    dispatch(sendMessageRequest({
       id: Date.now().toString(), activityId,
-      senderId: user.email, senderName: user.name,
+      senderId: user.id ?? user.email, senderName: user.name,
       text: text.trim(), timestamp: new Date().toISOString(),
-      type: 'text', delivered: true, readBy: [],
+      type: 'text', delivered: false, readBy: [],
     }));
     setText('');
   };
 
   const handleReact = (messageId: string, emoji: string) => {
     if (!user) return;
-    dispatch(addReaction({ messageId, emoji, userId: user.email }));
+    dispatch(addReaction({ messageId, emoji, userId: user.id ?? user.email }));
   };
 
   return (
@@ -146,10 +182,36 @@ export default function ActivityChatScreen({ route, navigation }: Props): React.
           keyExtractor={item => item.id}
           contentContainerStyle={styles.messagesList}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={isLoading && messages.length > 0}
+              onRefresh={() => dispatch(fetchMessagesRequest(activityId))}
+              tintColor={C.btnActive}
+            />
+          }
+          ListEmptyComponent={
+            isLoading ? (
+              <View style={styles.emptyState}>
+                <ActivityIndicator color={C.btnActive} />
+                <Text style={styles.emptyText}>Loading messages…</Text>
+              </View>
+            ) : loadError ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyText}>{loadError}</Text>
+                <TouchableOpacity onPress={() => dispatch(fetchMessagesRequest(activityId))}>
+                  <Text style={styles.retryText}>Try again</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyText}>No messages yet. Start the conversation.</Text>
+              </View>
+            )
+          }
           renderItem={({ item }: ListRenderItemInfo<ChatMessage>) => (
             <MessageBubble
               msg={item}
-              isMe={item.senderId === user?.email}
+              isMe={item.senderId === (user?.id ?? user?.email)}
               onReact={(emoji) => handleReact(item.id, emoji)}
             />
           )}
@@ -169,10 +231,14 @@ export default function ActivityChatScreen({ route, navigation }: Props): React.
             maxLength={500}
           />
           <TouchableOpacity
-            style={[styles.sendBtn, !text.trim() && styles.sendBtnDisabled]}
+            style={[styles.sendBtn, (!text.trim() || isSending) && styles.sendBtnDisabled]}
             onPress={handleSend}
-            disabled={!text.trim()}>
-            <Icon name="send" size={18} color={text.trim() ? C.textWhite : C.textMuted} />
+            disabled={!text.trim() || isSending}>
+            {isSending ? (
+              <ActivityIndicator size="small" color={C.textWhite} />
+            ) : (
+              <Icon name="send" size={18} color={text.trim() ? C.textWhite : C.textMuted} />
+            )}
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -193,6 +259,9 @@ const styles = StyleSheet.create({
   pinnedBannerText: { fontSize: 12, color: C.btnActive, lineHeight: 18 },
 
   messagesList: { padding: 16, paddingBottom: 8 },
+  emptyState: { alignItems: 'center', gap: 10, paddingTop: 56, paddingHorizontal: 24 },
+  emptyText: { color: C.textMuted, fontSize: 14, textAlign: 'center' },
+  retryText: { color: C.btnActive, fontSize: 14, fontWeight: '700' },
 
   systemMsg: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginVertical: 8 },
   pinnedIcon: { fontSize: 12 },
