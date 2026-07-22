@@ -24,6 +24,17 @@ export default function SplashScreen({ navigation }: Props): React.JSX.Element {
     navigation.replace('Login');
   }, [navigation]);
 
+  // Fallback: if the Lottie animation never fires onAnimationFinish
+  // (e.g. file fails to load, reduced-motion), navigate after 3 seconds.
+  useEffect(() => {
+    const fallback = setTimeout(() => {
+      if (hasNavigated.current) return;
+      hasNavigated.current = true;
+      navigation.replace('Login');
+    }, 3000);
+    return () => clearTimeout(fallback);
+  }, [navigation]);
+
   return (
     <View style={styles.container}>
       <Image source={require('../../assets/images/logo.png')} style={styles.logo} />

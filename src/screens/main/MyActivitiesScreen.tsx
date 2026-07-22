@@ -6,7 +6,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootState } from '../../store';
 import { ActivitiesStackParamList, Activity } from '../../types';
-import { selectMyJoined, selectMyCreated, leaveActivityRequest, cancelActivity, deleteActivity } from '../../store/slices/activitiesSlice';
+import { selectMyJoined, selectMyCreated, leaveActivityRequest, cancelActivityRequest, deleteActivityRequest } from '../../store/slices/activitiesSlice';
 import { C } from '../../theme';
 
 type Props = NativeStackScreenProps<ActivitiesStackParamList, 'MyActivities'>;
@@ -42,14 +42,14 @@ export default function MyActivitiesScreen({ navigation }: Props): React.JSX.Ele
   const handleCancel = (activity: Activity) => {
     Alert.alert('Cancel Activity', `Cancel "${activity.title}"?`, [
       { text: 'No', style: 'cancel' },
-      { text: 'Cancel Activity', style: 'destructive', onPress: () => dispatch(cancelActivity(activity.id)) },
+      { text: 'Cancel Activity', style: 'destructive', onPress: () => dispatch(cancelActivityRequest(activity.id)) },
     ]);
   };
 
   const handleDelete = (activity: Activity) => {
     Alert.alert('Delete Activity', `Delete "${activity.title}"?`, [
       { text: 'No', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => dispatch(deleteActivity(activity.id)) },
+      { text: 'Delete', style: 'destructive', onPress: () => dispatch(deleteActivityRequest(activity.id)) },
     ]);
   };
 

@@ -1,5 +1,8 @@
 import React from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ListRenderItemInfo } from 'react-native';
+import {
+  View, Text, TouchableOpacity, StyleSheet, SectionList,
+  SectionListRenderItemInfo,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSelector, useDispatch } from 'react-redux';
@@ -12,31 +15,53 @@ import { C } from '../../theme';
 type Props = NativeStackScreenProps<HomeStackParamList, 'Notifications'>;
 
 const TYPE_ICON: Record<NotificationType, string> = {
-  activity_joined: 'account-check', reminder: 'alarm', activity_updated: 'pencil',
-  chat: 'chat', community_bulletin: 'bullhorn',
+  activity_joined: 'account-check',
+  reminder: 'alarm',
+  activity_updated: 'pencil',
+  chat: 'chat',
+  community_bulletin: 'bullhorn',
 };
 
-function getGroup(timestamp: string): 'Today' | 'Yesterday' | 'Earlier' {
+type GroupKey = 'Today' | 'Yesterday' | 'Earlier';
+
+function getGroup(timestamp: string): GroupKey {
   const diffHrs = (Date.now() - new Date(timestamp).getTime()) / (1000 * 60 * 60);
   if (diffHrs < 24) return 'Today';
   if (diffHrs < 48) return 'Yesterday';
   return 'Earlier';
 }
 
+interface Section {
+  title: GroupKey;
+  data: AppNotification[];
+}
+
 export default function NotificationsScreen({ navigation }: Props): React.JSX.Element {
   const dispatch = useDispatch();
   const notifications = useSelector((state: RootState) => state.notifications.notifications);
 
-  const grouped: Record<string, AppNotification[]> = { Today: [], Yesterday: [], Earlier: [] };
+  // Build sections in deterministic order
+  const grouped: Record<GroupKey, AppNotification[]> = {
+    Today: [],
+    Yesterday: [],
+    Earlier: [],
+  };
   notifications.forEach(n => grouped[getGroup(n.timestamp)].push(n));
-  const sections = (['Today', 'Yesterday', 'Earlier'] as const).filter(g => grouped[g].length > 0);
+
+  const sections: Section[] = (
+    ['Today', 'Yesterday', 'Earlier'] as GroupKey[]
+  )
+    .filter(g => grouped[g].length > 0)
+    .map(g => ({ title: g, data: grouped[g] }));
 
   const handlePress = (n: AppNotification) => {
     dispatch(markAsRead(n.id));
-    if (n.activityId) navigation.navigate('ActivityDetail', { activityId: n.activityId });
+    if (n.activityId) {
+      navigation.navigate('ActivityDetail', { activityId: n.activityId });
+    }
   };
 
-  const renderItem = ({ item }: ListRenderItemInfo<AppNotification>) => (
+  const renderItem = ({ item }: SectionListRenderItemInfo<AppNotification>) => (
     <TouchableOpacity
       style={[styles.item, !item.read && styles.itemUnread]}
       onPress={() => handlePress(item)}
@@ -49,10 +74,16 @@ export default function NotificationsScreen({ navigation }: Props): React.JSX.El
         <Text style={styles.itemTitle}>{item.title}</Text>
         <Text style={styles.itemBody} numberOfLines={2}>{item.body}</Text>
         <Text style={styles.itemTime}>
-          {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          {new Date(item.timestamp).toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+          })}
         </Text>
       </View>
-      <TouchableOpacity style={styles.deleteBtn} onPress={() => dispatch(deleteNotification(item.id))}>
+      <TouchableOpacity
+        style={styles.deleteBtn}
+        onPress={() => dispatch(deleteNotification(item.id))}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
         <Icon name="close" size={16} color={C.textMuted} />
       </TouchableOpacity>
     </TouchableOpacity>
@@ -70,23 +101,22 @@ export default function NotificationsScreen({ navigation }: Props): React.JSX.El
         </TouchableOpacity>
       </View>
 
-      <FlatList
-        data={sections}
-        keyExtractor={(s, index) => `${s + index}`}
+      <SectionList<AppNotification, Section>
+        sections={sections}
+        keyExtractor={item => item.id}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 40 }}
-        renderItem={({ item: section }) => (
-          <View>
-            <Text style={styles.groupLabel}>{section}</Text>
-            {grouped[section].map(n => renderItem({ item: n } as ListRenderItemInfo<AppNotification>))}
-          </View>
+        renderSectionHeader={({ section }) => (
+          <Text style={styles.groupLabel}>{section.title}</Text>
         )}
+        renderItem={renderItem}
         ListEmptyComponent={
           <View style={styles.empty}>
             <Icon name="bell-off-outline" size={48} color={C.textMuted} />
             <Text style={styles.emptyText}>No notifications yet</Text>
           </View>
         }
+        stickySectionHeadersEnabled={false}
       />
     </SafeAreaView>
   );
@@ -94,16 +124,58 @@ export default function NotificationsScreen({ navigation }: Props): React.JSX.El
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: C.border, backgroundColor: C.bgCard },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: C.border,
+    backgroundColor: C.bgCard,
+  },
   headerTitle: { fontSize: 18, fontWeight: '700', color: C.textPrimary },
   markAllText: { fontSize: 13, color: C.btnInactive, fontWeight: '600' },
 
-  groupLabel: { fontSize: 12, fontWeight: '700', color: C.textMuted, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8, letterSpacing: 0.5 },
+  groupLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: C.textMuted,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 8,
+    letterSpacing: 0.5,
+  },
 
-  item: { flexDirection: 'row', alignItems: 'flex-start', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: C.divider, backgroundColor: C.bgCard },
+  item: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: C.divider,
+    backgroundColor: C.bgCard,
+  },
   itemUnread: { backgroundColor: C.bgMuted },
-  iconWrap: { width: 40, height: 40, borderRadius: 20, backgroundColor: C.bgInput, justifyContent: 'center', alignItems: 'center', marginRight: 12, position: 'relative' },
-  unreadDot: { position: 'absolute', top: 2, right: 2, width: 8, height: 8, borderRadius: 4, backgroundColor: C.btnActive },
+  iconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: C.bgInput,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+    position: 'relative',
+  },
+  unreadDot: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: C.btnActive,
+  },
   itemContent: { flex: 1 },
   itemTitle: { fontSize: 14, fontWeight: '600', color: C.textPrimary, marginBottom: 3 },
   itemBody: { fontSize: 12, color: C.textSecondary, lineHeight: 18 },

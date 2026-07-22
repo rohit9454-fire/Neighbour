@@ -145,7 +145,13 @@ export default function HomeScreen({ navigation }: Props): React.JSX.Element {
           </Text>
         </View>
         <TouchableOpacity style={styles.heroBtn}
-          onPress={() => navigation.navigate('ActivityDetail', { activityId: activities[0]?.id })}>
+          onPress={() => {
+            const firstActivity = activities.find(a => a.status === 'upcoming');
+            if (firstActivity) {
+              navigation.navigate('ActivityDetail', { activityId: firstActivity.id });
+            }
+          }}
+          disabled={!activities.some(a => a.status === 'upcoming')}>
           <Text style={styles.heroBtnText}>Explore </Text>
           <Icon name="arrow-right" size={14} color={C.textWhite} />
         </TouchableOpacity>
@@ -155,12 +161,13 @@ export default function HomeScreen({ navigation }: Props): React.JSX.Element {
         <View style={styles.weatherTitleRow}>
           <Icon name="weather-sunny" size={18} color="#F59E0B" style={{ marginRight: 6 }} />
           <Text style={styles.weatherTitle}>Today's Weather</Text>
+          <Text style={styles.weatherComingSoon}>· Coming soon</Text>
         </View>
         <View style={styles.weatherRow}>
-          <View style={styles.weatherItem}><Text style={styles.weatherVal}>28°C</Text><Text style={styles.weatherLbl}>Now</Text></View>
-          <View style={styles.weatherItem}><Text style={styles.weatherVal}>32°C</Text><Text style={styles.weatherLbl}>Afternoon</Text></View>
-          <View style={styles.weatherItem}><Text style={styles.weatherVal}>26°C</Text><Text style={styles.weatherLbl}>Evening</Text></View>
-          <View style={styles.weatherItem}><Text style={styles.weatherVal}>💧 60%</Text><Text style={styles.weatherLbl}>Humidity</Text></View>
+          <View style={styles.weatherItem}><Text style={styles.weatherVal}>--°C</Text><Text style={styles.weatherLbl}>Now</Text></View>
+          <View style={styles.weatherItem}><Text style={styles.weatherVal}>--°C</Text><Text style={styles.weatherLbl}>Afternoon</Text></View>
+          <View style={styles.weatherItem}><Text style={styles.weatherVal}>--°C</Text><Text style={styles.weatherLbl}>Evening</Text></View>
+          <View style={styles.weatherItem}><Text style={styles.weatherVal}>💧 --%</Text><Text style={styles.weatherLbl}>Humidity</Text></View>
         </View>
       </View>
 
@@ -259,6 +266,7 @@ const styles = StyleSheet.create({
   weatherCard: { marginHorizontal: 20, marginBottom: 16, backgroundColor: C.bgCard, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: C.border, shadowColor: C.shadow, shadowOpacity: 0.1, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
   weatherTitleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
   weatherTitle: { fontSize: 13, fontWeight: '600', color: C.textSecondary },
+  weatherComingSoon: { fontSize: 11, color: C.textMuted, marginLeft: 4 },
   weatherRow: { flexDirection: 'row', justifyContent: 'space-between' },
   weatherItem: { alignItems: 'center' },
   weatherVal: { fontSize: 14, fontWeight: '700', color: C.textPrimary },

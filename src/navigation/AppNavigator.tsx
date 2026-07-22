@@ -7,6 +7,7 @@ import {
   BottomTabParamList,
   HomeStackParamList,
   ActivitiesStackParamList,
+  GroupsStackParamList,
   ProfileStackParamList,
 } from '../types';
 
@@ -24,14 +25,23 @@ import EditActivityScreen from '../screens/main/EditActivityScreen';
 import MyActivitiesScreen from '../screens/main/MyActivitiesScreen';
 import ActivityChatScreen from '../screens/main/ActivityChatScreen';
 
+// Screens – Groups stack
+import GroupsScreen from '../screens/main/GroupsScreen';
+import GroupDetailScreen from '../screens/main/GroupDetailScreen';
+
 // Screens – Profile
 import ProfileScreen from '../screens/main/ProfileScreen';
 import EditProfileScreen from '../screens/main/EditProfileScreen';
 
 const Tab = createBottomTabNavigator<BottomTabParamList>();
-const HomeStack = createNativeStackNavigator<HomeStackParamList>();
-const ActivitiesStack = createNativeStackNavigator<ActivitiesStackParamList>();
-const ProfileStack = createNativeStackNavigator<ProfileStackParamList>();
+
+// Each tab gets its own stack instance to prevent back-stack sharing
+const HomeStack        = createNativeStackNavigator<HomeStackParamList>();
+const ActivitiesStack  = createNativeStackNavigator<ActivitiesStackParamList>();
+const CreateStack      = createNativeStackNavigator<ActivitiesStackParamList>();
+const ChatsStack       = createNativeStackNavigator<ActivitiesStackParamList>();
+const GroupsStack      = createNativeStackNavigator<GroupsStackParamList>();
+const ProfileStack     = createNativeStackNavigator<ProfileStackParamList>();
 
 const STACK_OPTS = { headerShown: false };
 
@@ -62,40 +72,51 @@ function ActivitiesStackNavigator(): React.JSX.Element {
   );
 }
 
+// Create tab — opens CreateActivity as the root, with the rest accessible for
+// navigation (e.g. after creating an activity the user can view its detail).
+function CreateTabNavigator(): React.JSX.Element {
+  return (
+    <CreateStack.Navigator screenOptions={STACK_OPTS}>
+      <CreateStack.Screen name="CreateActivity" component={CreateActivityScreen} />
+      <CreateStack.Screen name="EditActivity" component={EditActivityScreen} />
+      <CreateStack.Screen name="ActivitiesMain" component={ActivitiesScreen} />
+      <CreateStack.Screen name="ActivityDetail" component={ActivityDetailScreen} />
+      <CreateStack.Screen name="MyActivities" component={MyActivitiesScreen} />
+      <CreateStack.Screen name="ActivityChat" component={ActivityChatScreen} />
+    </CreateStack.Navigator>
+  );
+}
+
+// Chats tab — root is MyActivities so users can pick an activity to chat in.
+function ChatsTabNavigator(): React.JSX.Element {
+  return (
+    <ChatsStack.Navigator screenOptions={STACK_OPTS}>
+      <ChatsStack.Screen name="MyActivities" component={MyActivitiesScreen} />
+      <ChatsStack.Screen name="ActivityChat" component={ActivityChatScreen} />
+      <ChatsStack.Screen name="ActivityDetail" component={ActivityDetailScreen} />
+      <ChatsStack.Screen name="ActivitiesMain" component={ActivitiesScreen} />
+      <ChatsStack.Screen name="CreateActivity" component={CreateActivityScreen} />
+      <ChatsStack.Screen name="EditActivity" component={EditActivityScreen} />
+    </ChatsStack.Navigator>
+  );
+}
+
+function GroupsStackNavigator(): React.JSX.Element {
+  return (
+    <GroupsStack.Navigator screenOptions={STACK_OPTS}>
+      <GroupsStack.Screen name="GroupsMain" component={GroupsScreen} />
+      <GroupsStack.Screen name="GroupDetail" component={GroupDetailScreen} />
+      {/* CreateGroup screen can be added here when implemented */}
+    </GroupsStack.Navigator>
+  );
+}
+
 function ProfileStackNavigator(): React.JSX.Element {
   return (
     <ProfileStack.Navigator screenOptions={STACK_OPTS}>
       <ProfileStack.Screen name="ProfileMain" component={ProfileScreen} />
       <ProfileStack.Screen name="EditProfile" component={EditProfileScreen} />
     </ProfileStack.Navigator>
-  );
-}
-
-// Create tab — opens CreateActivity directly as a modal-style stack
-function CreateTabNavigator(): React.JSX.Element {
-  return (
-    <ActivitiesStack.Navigator screenOptions={STACK_OPTS}>
-      <ActivitiesStack.Screen name="CreateActivity" component={CreateActivityScreen} />
-      <ActivitiesStack.Screen name="EditActivity" component={EditActivityScreen} />
-      <ActivitiesStack.Screen name="ActivitiesMain" component={ActivitiesScreen} />
-      <ActivitiesStack.Screen name="ActivityDetail" component={ActivityDetailScreen} />
-      <ActivitiesStack.Screen name="MyActivities" component={MyActivitiesScreen} />
-      <ActivitiesStack.Screen name="ActivityChat" component={ActivityChatScreen} />
-    </ActivitiesStack.Navigator>
-  );
-}
-
-// Chats tab — shows activity chat list
-function ChatsTabNavigator(): React.JSX.Element {
-  return (
-    <ActivitiesStack.Navigator screenOptions={STACK_OPTS}>
-      <ActivitiesStack.Screen name="MyActivities" component={MyActivitiesScreen} />
-      <ActivitiesStack.Screen name="ActivityChat" component={ActivityChatScreen} />
-      <ActivitiesStack.Screen name="ActivityDetail" component={ActivityDetailScreen} />
-      <ActivitiesStack.Screen name="ActivitiesMain" component={ActivitiesScreen} />
-      <ActivitiesStack.Screen name="CreateActivity" component={CreateActivityScreen} />
-      <ActivitiesStack.Screen name="EditActivity" component={EditActivityScreen} />
-    </ActivitiesStack.Navigator>
   );
 }
 
@@ -116,7 +137,12 @@ function TabIcon({ name, focused, badge }: TabIconProps): React.JSX.Element {
 
 const tabStyles = StyleSheet.create({
   wrap: { alignItems: 'center', justifyContent: 'center' },
-  badge: { position: 'absolute', top: -4, right: -8, backgroundColor: '#EF4444', borderRadius: 8, minWidth: 16, height: 16, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 3 },
+  badge: {
+    position: 'absolute', top: -4, right: -8,
+    backgroundColor: '#EF4444', borderRadius: 8,
+    minWidth: 16, height: 16,
+    justifyContent: 'center', alignItems: 'center', paddingHorizontal: 3,
+  },
   badgeText: { fontSize: 9, color: '#fff', fontWeight: '700' },
 });
 
@@ -134,7 +160,7 @@ export default function AppNavigator(): React.JSX.Element {
           paddingBottom: 5,
           paddingTop: 5,
         },
-        tabBarLabelStyle: { fontSize: 10, fontWeight: '600', },
+        tabBarLabelStyle: { fontSize: 10, fontWeight: '600' },
       }}>
       <Tab.Screen
         name="Home"
@@ -163,12 +189,21 @@ export default function AppNavigator(): React.JSX.Element {
               backgroundColor: focused ? '#004AC6' : '#e5f0f5ff',
               justifyContent: 'center', alignItems: 'center',
               marginBottom: 35,
-              shadowColor: '#2563EB', shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 2 },
+              shadowColor: '#2563EB', shadowOpacity: 0.4, shadowRadius: 8,
+              shadowOffset: { width: 0, height: 2 },
               elevation: 6,
             }}>
               <Icon name="plus" size={26} color={focused ? '#FFFFFF' : '#004AC6'} />
             </View>
           ),
+        }}
+      />
+      <Tab.Screen
+        name="Groups"
+        component={GroupsStackNavigator}
+        options={{
+          tabBarLabel: 'Groups',
+          tabBarIcon: ({ focused }) => <TabIcon name="account-group" focused={focused} />,
         }}
       />
       <Tab.Screen

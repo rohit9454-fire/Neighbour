@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ListRenderItemInfo } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ListRenderItemInfo, Alert } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Group, GroupsStackParamList } from '../../types';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -32,7 +32,11 @@ export default function GroupsScreen({ navigation }: Props): React.JSX.Element {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Community Groups</Text>
-        <TouchableOpacity style={styles.createBtn} onPress={() => navigation.navigate('CreateGroup')}>
+        <TouchableOpacity
+          style={styles.createBtn}
+          onPress={() =>
+            Alert.alert('Coming Soon', 'Group creation will be available in a future update.')
+          }>
           <Text style={styles.createBtnText}>+ New</Text>
         </TouchableOpacity>
       </View>

@@ -1,4 +1,4 @@
-import { call, put, takeLatest } from 'redux-saga/effects';
+import { call, put, takeEvery, takeLatest } from 'redux-saga/effects';
 import { chatService } from '../../services';
 import { ChatMessage } from '../../types';
 import {
@@ -43,5 +43,6 @@ function* handleSendMessage(action: ReturnType<typeof sendMessageRequest>) {
 
 export function* chatSaga() {
   yield takeLatest(fetchMessagesRequest.type, handleFetchMessages);
-  yield takeLatest(sendMessageRequest.type, handleSendMessage);
+  // takeEvery so rapid successive sends don't cancel each other mid-flight
+  yield takeEvery(sendMessageRequest.type, handleSendMessage);
 }

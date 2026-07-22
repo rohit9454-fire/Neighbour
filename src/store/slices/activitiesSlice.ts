@@ -59,8 +59,25 @@ const activitiesSlice = createSlice({
       state.loading = true;
       state.error = null;
     },
-    fetchActivitiesSuccess: (state, action: PayloadAction<Activity[]>) => {
-      state.activities = action.payload;
+    fetchActivitiesSuccess: (state, action: PayloadAction<{ activities: Activity[]; userId?: string }>) => {
+      state.activities = action.payload.activities;
+      // Seed myJoined from the server response so joined state survives auto-login
+      if (action.payload.userId) {
+        const joinedIds = action.payload.activities
+          .filter(a =>
+            a.participants.some(p => p.userId === action.payload.userId),
+          )
+          .map(a => a.id);
+        // Merge: keep any IDs already in the list that aren't in the new batch
+        const merged = Array.from(new Set([...state.myJoined, ...joinedIds]));
+        state.myJoined = merged;
+
+        // Seed myCreated similarly
+        const createdIds = action.payload.activities
+          .filter(a => a.hostId === action.payload.userId)
+          .map(a => a.id);
+        state.myCreated = Array.from(new Set([...state.myCreated, ...createdIds]));
+      }
       state.loading = false;
       state.refreshing = false;
     },
@@ -205,13 +222,19 @@ const activitiesSlice = createSlice({
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload;
     },
-    cancelActivity: (state, action: PayloadAction<string>) => {
+    // cancelActivityRequest → dispatches to saga → calls API → cancelActivitySuccess
+    cancelActivityRequest: (state, _action: PayloadAction<string>) => {
+      state.isDeleting = true; // reuse the deleting flag
+      state.deleteError = null;
+    },
+    cancelActivitySuccess: (state, action: PayloadAction<string>) => {
       const activity = state.activities.find(a => a.id === action.payload);
       if (activity) activity.status = 'cancelled';
+      state.isDeleting = false;
     },
-    deleteActivity: (state, action: PayloadAction<string>) => {
-      state.activities = state.activities.filter(a => a.id !== action.payload);
-      state.myCreated = state.myCreated.filter(id => id !== action.payload);
+    cancelActivityFailure: (state, action: PayloadAction<string>) => {
+      state.isDeleting = false;
+      state.deleteError = action.payload;
     },
   },
 });
@@ -228,7 +251,7 @@ export const {
   updateActivityRequest, updateActivitySuccess, updateActivityFailure,
   clearUpdateActivityState, deleteActivityRequest, deleteActivitySuccess,
   deleteActivityFailure, clearDeleteActivityState, setRefreshing,
-  setLoading, cancelActivity, deleteActivity,
+  setLoading, cancelActivityRequest, cancelActivitySuccess, cancelActivityFailure,
 } = activitiesSlice.actions;
 
 // Selectors

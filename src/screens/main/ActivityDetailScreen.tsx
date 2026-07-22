@@ -37,16 +37,27 @@ export default function ActivityDetailScreen({ route, navigation }: Props): Reac
   );
   const [bookmarked, setBookmarked] = useState(false);
 
+  // Dispatch the join notification from here only when lastJoinedId matches.
+  // The addNotification dispatch is intentionally kept in the screen (not saga)
+  // so it has access to the full activity object; we guard against re-fires by
+  // immediately calling clearJoinActivityState after dispatching.
   useEffect(() => {
     if (lastJoinedId !== activityId || !activity || !user) return;
-
-    dispatch(addNotification({
-      id: Date.now().toString(), type: 'activity_joined',
-      title: `You joined ${activity.title}`,
-      body: `See you at ${activity.location} on ${activity.date} at ${activity.time}`,
-      timestamp: new Date().toISOString(), read: false, activityId,
-    }));
+    // Snapshot the values we need before clearing state
+    const title = activity.title;
+    const location = activity.location;
+    const date = activity.date;
+    const time = activity.time;
     dispatch(clearJoinActivityState());
+    dispatch(addNotification({
+      id: Date.now().toString(),
+      type: 'activity_joined',
+      title: `You joined ${title}`,
+      body: `See you at ${location} on ${date} at ${time}`,
+      timestamp: new Date().toISOString(),
+      read: false,
+      activityId,
+    }));
   }, [activity, activityId, dispatch, lastJoinedId, user]);
 
   useEffect(() => {
@@ -84,14 +95,15 @@ export default function ActivityDetailScreen({ route, navigation }: Props): Reac
   );
   const isJoining = joiningIds.includes(activityId);
   const isLeaving = leavingIds.includes(activityId);
-  const sanitize = (s: string) => s.replace(/[\r\n<>"'`]/g, ' ').trim();
+  // Renamed from `sanitize` to avoid collision with authSaga's sanitize helper
+  const sanitizeForShare = (s: string) => s.replace(/[\r\n<>"'`]/g, ' ').trim();
 
   const handleJoin = () => {
     dispatch(joinActivityRequest(activityId));
   };
 
   const handleShare = async () => {
-    await Share.share({ message: `Join me for ${sanitize(activity.title)} on ${activity.date} at ${activity.time}! 📍 ${sanitize(activity.location)}` });
+    await Share.share({ message: `Join me for ${sanitizeForShare(activity.title)} on ${activity.date} at ${activity.time}! 📍 ${sanitizeForShare(activity.location)}` });
   };
 
   const handleReport = () => Alert.alert('Report Activity', 'Thank you for your report. We will review it shortly.');
@@ -236,7 +248,7 @@ export default function ActivityDetailScreen({ route, navigation }: Props): Reac
               )}
             </View>
             <View style={styles.slotsBar}>
-              <View style={[styles.slotsBarFill, { width: `${(activity.participants.length / activity.maxParticipants) * 100}%` as any }]} />
+              <View style={[styles.slotsBarFill, { width: `${Math.round((activity.participants.length / activity.maxParticipants) * 100)}%` }]} />
             </View>
             <Text style={styles.slotsText}>{remaining > 0 ? `${remaining} slots remaining` : 'Activity is full'}</Text>
           </View>
@@ -325,7 +337,7 @@ const styles = StyleSheet.create({
   organizerAvatarText: { fontSize: 18, fontWeight: '700', color: C.textWhite },
   organizerName: { fontSize: 15, fontWeight: '600', color: C.textPrimary },
   organizerRole: { fontSize: 12, color: C.textMuted, marginTop: 2 },
-  youBadge: { marginLeft: 'auto' as any, backgroundColor: C.bgMuted, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
+  youBadge: { flex: 0, marginLeft: 'auto', backgroundColor: C.bgMuted, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
   youBadgeText: { fontSize: 11, color: C.btnActive, fontWeight: '600' },
 
   participantsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },

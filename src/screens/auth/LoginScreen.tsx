@@ -107,7 +107,15 @@ export default function LoginScreen({ navigation }: Props): React.JSX.Element {
         </View>
 
         {/* Forgot Password */}
-        <TouchableOpacity activeOpacity={0.7} disabled={loading}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          disabled={loading}
+          onPress={() =>
+            Alert.alert(
+              'Reset Password',
+              'Please contact support or use the reset link sent to your registered email.',
+            )
+          }>
           <Text style={styles.forgot}>Forgot Password?</Text>
         </TouchableOpacity>
 

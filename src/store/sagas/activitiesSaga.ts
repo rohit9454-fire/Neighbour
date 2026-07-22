@@ -1,4 +1,4 @@
-import { call, put, takeLatest } from 'redux-saga/effects';
+import { call, put, select, takeLatest } from 'redux-saga/effects';
 import { activitiesService } from '../../services/activitiesService';
 import {
   fetchActivitiesRequest,
@@ -20,13 +20,21 @@ import {
   deleteActivityRequest,
   deleteActivitySuccess,
   deleteActivityFailure,
+  cancelActivityRequest,
+  cancelActivitySuccess,
+  cancelActivityFailure,
 } from '../slices/activitiesSlice';
 import { Activity } from '../../types';
+import { RootState } from '../index';
 
 function* handleFetchActivities() {
   try {
     const activities: Activity[] = yield call(activitiesService.getActivities);
-    yield put(fetchActivitiesSuccess(activities));
+    // Pass the current user's id so the slice can seed myJoined/myCreated
+    const userId: string | undefined = yield select(
+      (state: RootState) => state.auth.user?.id,
+    );
+    yield put(fetchActivitiesSuccess({ activities, userId }));
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to load activities.';
     yield put(fetchActivitiesFailure(message));
@@ -93,6 +101,21 @@ function* handleDeleteActivity(action: ReturnType<typeof deleteActivityRequest>)
   }
 }
 
+function* handleCancelActivity(action: ReturnType<typeof cancelActivityRequest>) {
+  try {
+    // Cancel is a soft-delete: update the activity status on the server via patch
+    const activity: Activity = yield call(
+      activitiesService.updateActivity,
+      action.payload,
+      { status: 'cancelled' } as any,
+    );
+    yield put(cancelActivitySuccess(activity?.id ?? action.payload));
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to cancel activity.';
+    yield put(cancelActivityFailure(message));
+  }
+}
+
 export function* activitiesSaga() {
   yield takeLatest(fetchActivitiesRequest.type, handleFetchActivities);
   yield takeLatest(fetchActivitiesRefresh.type, handleFetchActivities);
@@ -101,4 +124,5 @@ export function* activitiesSaga() {
   yield takeLatest(joinActivityRequest.type, handleJoinActivity);
   yield takeLatest(leaveActivityRequest.type, handleLeaveActivity);
   yield takeLatest(deleteActivityRequest.type, handleDeleteActivity);
+  yield takeLatest(cancelActivityRequest.type, handleCancelActivity);
 }

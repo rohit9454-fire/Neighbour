@@ -116,9 +116,11 @@ export default function ActivityChatScreen({ route, navigation }: Props): React.
   const [showPinned, setShowPinned] = useState(false);
   const listRef = useRef<FlatList>(null);
 
-  useEffect(() => {
-    setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
-  }, [messages.length]);
+  // Scroll to bottom whenever new messages arrive, using onContentSizeChange
+  // instead of a fragile setTimeout so we don't depend on an arbitrary delay.
+  const scrollToBottom = () => {
+    listRef.current?.scrollToEnd({ animated: true });
+  };
 
   useEffect(() => {
     dispatch(fetchMessagesRequest(activityId));
@@ -182,6 +184,9 @@ export default function ActivityChatScreen({ route, navigation }: Props): React.
           keyExtractor={item => item.id}
           contentContainerStyle={styles.messagesList}
           showsVerticalScrollIndicator={false}
+          // Scroll to bottom whenever content size grows (new message added)
+          onContentSizeChange={scrollToBottom}
+          onLayout={scrollToBottom}
           refreshControl={
             <RefreshControl
               refreshing={isLoading && messages.length > 0}

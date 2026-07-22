@@ -162,7 +162,8 @@ export type ActivitiesStackParamList = {
 export type GroupsStackParamList = {
   GroupsMain: undefined;
   GroupDetail: { group: Group };
-  CreateGroup: undefined;
+  // CreateGroup is not yet implemented; placeholder keeps the type consistent
+  CreateGroup?: undefined;
 };
 
 export type ProfileStackParamList = {
@@ -174,6 +175,7 @@ export type BottomTabParamList = {
   Home: undefined;
   Activities: undefined;
   Create: undefined;
+  Groups: undefined;
   Chats: undefined;
   Profile: undefined;
 };

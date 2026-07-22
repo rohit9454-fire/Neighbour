@@ -4,7 +4,11 @@ import axios, {
   InternalAxiosRequestConfig,
 } from 'axios';
 
-const BASE_URL = 'https://neighbourconnect-s2lb-production.up.railway.app';
+// Base URL is read from the .env file so staging/prod can be switched without
+// code changes. Falls back to the production URL if the variable is missing.
+const BASE_URL =
+  process.env.API_BASE_URL ??
+  'https://neighbourconnect-s2lb-production.up.railway.app';
 
 const apiClient = axios.create({
   baseURL: BASE_URL,

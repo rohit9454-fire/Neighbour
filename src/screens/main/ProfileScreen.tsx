@@ -11,7 +11,6 @@ import { ProfileStackParamList } from '../../types';
 
 type Props = NativeStackScreenProps<ProfileStackParamList, 'ProfileMain'>;
 
-const INTERESTS = ['🎾 Badminton', '🏏 Cricket', '🏃 Running', '🚴 Cycling', '🚗 Carpool', '👥 Study Group', '🐾 Dog Walking'];
 const APP_VERSION = '1.0.0';
 
 export default function ProfileScreen({ navigation }: Props): React.JSX.Element {
@@ -75,13 +74,22 @@ export default function ProfileScreen({ navigation }: Props): React.JSX.Element 
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>INTERESTS</Text>
-          <View style={styles.interestsWrap}>
-            {(user?.interests ?? INTERESTS.slice(0, 4)).map((interest, i) => (
-              <View key={i} style={styles.interestChip}>
-                <Text style={styles.interestText}>{interest}</Text>
-              </View>
-            ))}
-          </View>
+          {(user?.interests ?? []).length > 0 ? (
+            <View style={styles.interestsWrap}>
+              {(user?.interests ?? []).map((interest, i) => (
+                <View key={i} style={styles.interestChip}>
+                  <Text style={styles.interestText}>{interest}</Text>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={styles.addInterestsCta}
+              onPress={() => navigation.navigate('EditProfile')}>
+              <Icon name="plus-circle-outline" size={18} color={C.btnActive} style={{ marginRight: 8 }} />
+              <Text style={styles.addInterestsText}>Add your interests</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         <View style={styles.section}>
@@ -160,6 +168,8 @@ const styles = StyleSheet.create({
   interestsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   interestChip: { backgroundColor: C.bgMuted, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: C.border },
   interestText: { fontSize: 13, color: C.btnActive },
+  addInterestsCta: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12 },
+  addInterestsText: { fontSize: 14, color: C.btnActive, fontWeight: '600' },
 
   menuCard: { backgroundColor: C.bgCard, borderRadius: 16, overflow: 'hidden', shadowColor: C.shadow, shadowOpacity: 0.08, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
   menuItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 15 },

@@ -32,9 +32,13 @@ const chatSlice = createSlice({
       action: PayloadAction<{ activityId: string; messages: ChatMessage[] }>,
     ) => {
       const { activityId, messages } = action.payload;
+      // Replace all messages for this activity with the server batch, sorted by timestamp
+      const sorted = [...messages].sort(
+        (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+      );
       state.messages = [
         ...state.messages.filter(message => message.activityId !== activityId),
-        ...messages,
+        ...sorted,
       ];
       state.loadingActivityIds = state.loadingActivityIds.filter(id => id !== activityId);
     },
@@ -113,9 +117,13 @@ export const {
   pinMessage,
 } = chatSlice.actions;
 
+// Messages sorted oldest → newest so the FlatList renders in correct chronological order
 export const selectMessagesByActivity = (activityId: string) =>
   (state: { chat: ChatState }) =>
-    state.chat.messages.filter(m => m.activityId === activityId);
+    state.chat.messages
+      .filter(m => m.activityId === activityId)
+      .slice()
+      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
 export const selectPinnedMessages = (activityId: string) =>
   (state: { chat: ChatState }) =>
