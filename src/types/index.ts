@@ -104,6 +104,8 @@ export interface ChatMessage {
   readBy?: string[];
   delivered?: boolean;
   pinned?: boolean;
+  /** Set to true by the server after the message has been edited */
+  isEdited?: boolean;
 }
 
 export type NotificationType =
