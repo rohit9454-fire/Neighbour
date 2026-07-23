@@ -18,8 +18,15 @@ import {
   reactMessageRequest,
   selectMessagesByActivity,
   selectPinnedMessages,
+  selectHasMoreMessages,
+  selectSocketConnected,
   sendMessageRequest,
+  loadMoreMessagesRequest,
+  socketTypingUpdate,
+  socketMessageReceived,
 } from '../../store/slices/chatSlice';
+import { socketActions } from '../../store/slices/chatSlice';
+import { socketService } from '../../services/socketService';
 import { C } from '../../theme';
 
 type Props = NativeStackScreenProps<ActivitiesStackParamList, 'ActivityChat'>;
@@ -159,6 +166,8 @@ export default function ActivityChatScreen({ route, navigation }: Props): React.
   const user = useSelector((state: RootState) => state.auth.user);
   const messages = useSelector(selectMessagesByActivity(activityId));
   const pinnedMessages = useSelector(selectPinnedMessages(activityId));
+  const hasMore = useSelector(selectHasMoreMessages(activityId));
+  const isSocketConnected = useSelector(selectSocketConnected);
   const isLoading = useSelector((state: RootState) =>
     state.chat.loadingActivityIds.includes(activityId),
   );
@@ -176,17 +185,19 @@ export default function ActivityChatScreen({ route, navigation }: Props): React.
   const editingMessageIds = useSelector(
     (state: RootState) => state.chat.editingMessageIds,
   );
+  const typingUsers = useSelector(
+    (state: RootState) => state.chat.typingUsers[activityId] ?? [],
+  );
 
   const [text, setText] = useState('');
   const [showPinned, setShowPinned] = useState(false);
   const listRef = useRef<FlatList>(null);
+  const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Edit state ──────────────────────────────────────────────────────────────
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState('');
-  // originalText stored in state so the banner re-renders correctly
   const [editOriginalText, setEditOriginalText] = useState('');
-  // Also kept in a ref so saga callbacks can access it synchronously
   const editOriginalRef = useRef<string>('');
   const lastSubmittedEditIdRef = useRef<string | null>(null);
 
@@ -197,9 +208,37 @@ export default function ActivityChatScreen({ route, navigation }: Props): React.
     listRef.current?.scrollToEnd({ animated: true });
   }, []);
 
+  // Join socket room and fetch initial messages on mount
   useEffect(() => {
+    dispatch(socketActions.joinRoom(activityId));
     dispatch(fetchMessagesRequest(activityId));
-  }, [activityId, dispatch]);
+
+    // Register real-time listeners directly in the screen.
+    // This avoids the redux-saga eventChannel import issue and is simpler
+    // since the screen owns the lifecycle of these subscriptions.
+    const unsubMessage = socketService.onMessage(activityId, (message) => {
+      dispatch(socketMessageReceived(message));
+    });
+
+    const unsubTyping = socketService.onTyping(activityId, (data) => {
+      dispatch(socketTypingUpdate(data));
+    });
+
+    return () => {
+      unsubMessage();
+      unsubTyping();
+      dispatch(socketActions.leaveRoom(activityId));
+      dispatch(socketTypingUpdate({ activityId, users: [] }));
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activityId]);
+
+  // Scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (messages.length > 0) {
+      scrollToBottom();
+    }
+  }, [messages.length, scrollToBottom]);
 
   // Show send error
   useEffect(() => {
@@ -209,8 +248,7 @@ export default function ActivityChatScreen({ route, navigation }: Props): React.
     ]);
   }, [activityId, dispatch, sendError]);
 
-  // Watch for edit errors — use lastSubmittedEditIdRef because editingId is
-  // already null by the time the saga failure arrives (cancelEdit ran first)
+  // Watch for edit errors
   const editErrors = useSelector(
     (state: RootState) => state.chat.editErrorsByMessage,
   );
@@ -229,10 +267,34 @@ export default function ActivityChatScreen({ route, navigation }: Props): React.
     ]);
   }, [editErrors, dispatch]);
 
+  // ── Typing indicator ────────────────────────────────────────────────────────
+
+  const handleTextChange = (value: string) => {
+    setText(value);
+
+    // Emit typing start
+    if (value.length > 0) {
+      socketService.sendTyping(activityId, true);
+
+      // Auto-stop typing after 2s of inactivity
+      if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+      typingTimerRef.current = setTimeout(() => {
+        socketService.sendTyping(activityId, false);
+      }, 2000);
+    } else {
+      socketService.sendTyping(activityId, false);
+      if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+    }
+  };
+
   // ── Send / Edit submit ──────────────────────────────────────────────────────
 
   const handleSend = () => {
     if (!text.trim() || !user) return;
+    // Stop typing indicator
+    socketService.sendTyping(activityId, false);
+    if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+
     dispatch(sendMessageRequest({
       id: Date.now().toString(),
       activityId,
@@ -249,7 +311,7 @@ export default function ActivityChatScreen({ route, navigation }: Props): React.
 
   const handleEditSubmit = () => {
     if (!editingId || !editDraft.trim()) return;
-    lastSubmittedEditIdRef.current = editingId; // capture before cancelEdit clears it
+    lastSubmittedEditIdRef.current = editingId;
     dispatch(editMessageRequest({
       activityId,
       messageId: editingId,
@@ -288,9 +350,24 @@ export default function ActivityChatScreen({ route, navigation }: Props): React.
     setEditingId(msg.id);
   };
 
+  // ── Pagination ──────────────────────────────────────────────────────────────
+
+  const handleLoadMore = () => {
+    if (!isLoading && hasMore) {
+      dispatch(loadMoreMessagesRequest(activityId));
+    }
+  };
+
   // ── Rendering ───────────────────────────────────────────────────────────────
 
   const isEditMode = editingId !== null;
+
+  // Typing indicator text
+  const typingText = typingUsers.length === 1
+    ? `${typingUsers[0]} is typing…`
+    : typingUsers.length > 1
+      ? `${typingUsers.slice(0, 2).join(', ')} are typing…`
+      : null;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -301,7 +378,12 @@ export default function ActivityChatScreen({ route, navigation }: Props): React.
         </TouchableOpacity>
         <View style={styles.headerInfo}>
           <Text style={styles.headerTitle} numberOfLines={1}>{activityTitle}</Text>
-          <Text style={styles.headerSub}>Activity Chat</Text>
+          <View style={styles.headerSubRow}>
+            <View style={[styles.socketDot, { backgroundColor: isSocketConnected ? C.success : C.textMuted }]} />
+            <Text style={styles.headerSub}>
+              {isSocketConnected ? 'Live' : 'Activity Chat'}
+            </Text>
+          </View>
         </View>
         {pinnedMessages.length > 0 && (
           <TouchableOpacity onPress={() => setShowPinned(p => !p)}>
@@ -321,7 +403,7 @@ export default function ActivityChatScreen({ route, navigation }: Props): React.
         </View>
       )}
 
-      {/* Edit mode banner — shows which message is being edited */}
+      {/* Edit mode banner */}
       {isEditMode && (
         <View style={styles.editBanner}>
           <Icon name="pencil" size={14} color={C.btnActive} style={{ marginRight: 6 }} />
@@ -336,7 +418,8 @@ export default function ActivityChatScreen({ route, navigation }: Props): React.
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 24}>
         <FlatList<ChatMessage>
           ref={listRef}
           data={messages}
@@ -345,6 +428,20 @@ export default function ActivityChatScreen({ route, navigation }: Props): React.
           showsVerticalScrollIndicator={false}
           onContentSizeChange={scrollToBottom}
           onLayout={scrollToBottom}
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.15}
+          ListHeaderComponent={
+            hasMore ? (
+              <View style={styles.loadMoreHeader}>
+                {isLoading
+                  ? <ActivityIndicator size="small" color={C.btnActive} />
+                  : <TouchableOpacity onPress={handleLoadMore}>
+                      <Text style={styles.loadMoreText}>Load older messages</Text>
+                    </TouchableOpacity>
+                }
+              </View>
+            ) : null
+          }
           refreshControl={
             <RefreshControl
               refreshing={isLoading && messages.length > 0}
@@ -385,10 +482,16 @@ export default function ActivityChatScreen({ route, navigation }: Props): React.
           }}
         />
 
+        {/* Typing indicator */}
+        {typingText && (
+          <View style={styles.typingBar}>
+            <Text style={styles.typingText}>{typingText}</Text>
+          </View>
+        )}
+
         {/* Input / Edit bar */}
         <View style={styles.inputBar}>
           {isEditMode ? (
-            // ── Edit mode input ──────────────────────────────────────────────
             <>
               <TextInput
                 style={[styles.input, styles.inputEdit]}
@@ -418,7 +521,6 @@ export default function ActivityChatScreen({ route, navigation }: Props): React.
               </TouchableOpacity>
             </>
           ) : (
-            // ── Normal send mode ─────────────────────────────────────────────
             <>
               <TouchableOpacity style={styles.attachBtn}>
                 <Icon name="paperclip" size={20} color={C.textSecondary} />
@@ -428,7 +530,7 @@ export default function ActivityChatScreen({ route, navigation }: Props): React.
                 placeholder="Type a message..."
                 placeholderTextColor={C.textMuted}
                 value={text}
-                onChangeText={setText}
+                onChangeText={handleTextChange}
                 multiline
                 maxLength={500}
               />
@@ -513,7 +615,9 @@ const styles = StyleSheet.create({
   },
   headerInfo: { flex: 1 },
   headerTitle: { fontSize: 15, fontWeight: '700', color: C.textPrimary },
-  headerSub: { fontSize: 11, color: C.textMuted, marginTop: 1 },
+  headerSubRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 1 },
+  headerSub: { fontSize: 11, color: C.textMuted },
+  socketDot: { width: 6, height: 6, borderRadius: 3 },
   pinnedBtn: { fontSize: 13, color: C.btnInactive },
 
   pinnedBanner: {
@@ -621,4 +725,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center',
   },
   sendBtnDisabled: { backgroundColor: C.bgMuted },
+
+  typingBar: {
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    backgroundColor: C.bgCard,
+    borderTopWidth: 1,
+    borderTopColor: C.divider,
+  },
+  typingText: { fontSize: 11, color: C.textMuted, fontStyle: 'italic' },
+
+  loadMoreHeader: {
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  loadMoreText: {
+    fontSize: 13,
+    color: C.btnActive,
+    fontWeight: '600',
+  },
 });

@@ -1,6 +1,16 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { ChatMessage } from '../../types';
 
+// ─── Socket actions (dispatched from the useActivityChat hook) ────────────────
+// Separate from slice reducers so they are plain action creators consumed by
+// both the saga (for side effects) and the slice (for state updates).
+export const socketActions = {
+  joinRoom:    (activityId: string)                             => ({ type: 'chat/socketJoinRoom'    as const, payload: activityId }),
+  leaveRoom:   (activityId: string)                             => ({ type: 'chat/socketLeaveRoom'   as const, payload: activityId }),
+  messageReceived: (message: ChatMessage)                       => ({ type: 'chat/socketMessageReceived' as const, payload: message }),
+  typingUpdate: (data: { activityId: string; users: string[] }) => ({ type: 'chat/socketTypingUpdate' as const, payload: data }),
+};
+
 interface ChatState {
   messages: ChatMessage[];
   typingUsers: Record<string, string[]>;
@@ -8,16 +18,24 @@ interface ChatState {
   errorsByActivity: Record<string, string | undefined>;
   sendingMessageIds: string[];
   sendErrorsByActivity: Record<string, string | undefined>;
-  // Tracks which messageIds have a reaction API call in-flight
   reactingMessageIds: string[];
-  // Per-message reaction errors: messageId → error string
   reactErrorsByMessage: Record<string, string | undefined>;
-  // Tracks which messageIds have an edit API call in-flight
   editingMessageIds: string[];
-  // Per-message edit errors: messageId → error string
   editErrorsByMessage: Record<string, string | undefined>;
-  // Tracks messageIds where delivered PATCH is in-flight (fire-and-forget, no UI block)
   deliveringMessageIds: string[];
+  /**
+   * Permanent set of messageIds the user has successfully edited locally.
+   * Unlike editingMessageIds (in-flight only), this persists after the saga
+   * completes so fetchMessagesSuccess never overwrites edited text with a
+   * stale server response.
+   */
+  locallyEditedIds: string[];
+  /** Whether the Socket.io connection is currently active. */
+  socketConnected: boolean;
+  /** Per-activity cursor for message pagination (oldest message id fetched). */
+  paginationCursors: Record<string, string | null>;
+  /** Whether there are more historical messages to load for each activity. */
+  hasMoreMessages: Record<string, boolean>;
 }
 
 const chatSlice = createSlice({
@@ -34,6 +52,10 @@ const chatSlice = createSlice({
     editingMessageIds: [],
     editErrorsByMessage: {},
     deliveringMessageIds: [],
+    locallyEditedIds: [],
+    socketConnected: false,
+    paginationCursors: {},
+    hasMoreMessages: {},
   } as ChatState,
   reducers: {
     fetchMessagesRequest: (state, action: PayloadAction<string>) => {
@@ -48,26 +70,20 @@ const chatSlice = createSlice({
     ) => {
       const { activityId, messages } = action.payload;
 
-      // Sort the incoming server batch oldest → newest
       const sorted = [...messages].sort(
         (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
       );
 
-      // Preserve any locally-edited messages so a background re-fetch doesn't
-      // overwrite text the user just saved before the server confirms the edit.
-      // A message is "locally edited" if it's still in editingMessageIds OR
-      // if the local copy has isEdited=true but the server copy doesn't yet —
-      // which happens when the PATCH response arrives after the GET response.
-      const editedLocally = new Set<string>([
+      // Build a protection set from both in-flight edits AND permanently-edited ids.
+      // locallyEditedIds is NEVER cleared by fetches, so an edit always wins
+      // over a subsequent server response that still carries the old text.
+      const protectedIds = new Set<string>([
         ...state.editingMessageIds,
-        ...state.messages
-          .filter(m => m.activityId === activityId && m.isEdited)
-          .map(m => m.id),
+        ...state.locallyEditedIds,
       ]);
 
       const merged = sorted.map(serverMsg => {
-        if (editedLocally.has(serverMsg.id)) {
-          // Keep the local (edited) copy instead of overwriting with stale server text
+        if (protectedIds.has(serverMsg.id)) {
           const localMsg = state.messages.find(m => m.id === serverMsg.id);
           return localMsg ?? serverMsg;
         }
@@ -153,9 +169,18 @@ const chatSlice = createSlice({
       const { messageId, updatedMessage } = action.payload;
       state.reactingMessageIds = state.reactingMessageIds.filter(id => id !== messageId);
       if (updatedMessage) {
-        // Replace the local (optimistic) copy with the server-authoritative message
         const index = state.messages.findIndex(m => m.id === messageId);
-        if (index >= 0) state.messages[index] = updatedMessage;
+        if (index >= 0) {
+          const wasEditedLocally = state.locallyEditedIds.includes(messageId);
+          state.messages[index] = {
+            ...updatedMessage,
+            // Preserve local edit state — server reaction response won't carry it
+            ...(wasEditedLocally && {
+              text: state.messages[index].text,
+              isEdited: true,
+            }),
+          };
+        }
       }
     },
     reactMessageFailure: (
@@ -185,8 +210,13 @@ const chatSlice = createSlice({
       if (!state.editingMessageIds.includes(messageId)) {
         state.editingMessageIds.push(messageId);
       }
+      // Add to permanent protection set immediately so any concurrent fetch
+      // that resolves while the PATCH is in-flight won't overwrite the text
+      if (!state.locallyEditedIds.includes(messageId)) {
+        state.locallyEditedIds.push(messageId);
+      }
       delete state.editErrorsByMessage[messageId];
-      // Optimistic update — show the new text instantly
+      // Optimistic update
       const msg = state.messages.find(m => m.id === messageId);
       if (msg) {
         msg.text = text;
@@ -199,19 +229,16 @@ const chatSlice = createSlice({
     ) => {
       const { messageId, updatedMessage, optimisticText } = action.payload;
       state.editingMessageIds = state.editingMessageIds.filter(id => id !== messageId);
+      // locallyEditedIds intentionally kept — never remove it so future fetches
+      // always protect this message
       const index = state.messages.findIndex(m => m.id === messageId);
       if (index < 0) return;
 
       if (updatedMessage) {
-        // Server returned an updated message — use it as authoritative,
-        // but ALWAYS force isEdited=true so fetchMessagesSuccess won't
-        // overwrite this message on the next background fetch
-        state.messages[index] = {
-          ...updatedMessage,
-          isEdited: true,
-        };
+        // Use server copy but force isEdited=true regardless of what server returns
+        state.messages[index] = { ...updatedMessage, isEdited: true };
       } else {
-        // Server returned null / empty body — keep the optimistic text
+        // Server returned empty body — keep the optimistic text
         state.messages[index] = {
           ...state.messages[index],
           text: optimisticText,
@@ -225,8 +252,10 @@ const chatSlice = createSlice({
     ) => {
       const { messageId, originalText, message } = action.payload;
       state.editingMessageIds = state.editingMessageIds.filter(id => id !== messageId);
+      // Remove from permanent set on failure so future fetches restore server truth
+      state.locallyEditedIds = state.locallyEditedIds.filter(id => id !== messageId);
       state.editErrorsByMessage[messageId] = message;
-      // Roll back the optimistic text change
+      // Roll back optimistic text
       const msg = state.messages.find(m => m.id === messageId);
       if (msg) {
         msg.text = originalText;
@@ -281,6 +310,62 @@ const chatSlice = createSlice({
       const msg = state.messages.find(m => m.id === action.payload);
       if (msg) msg.pinned = !msg.pinned;
     },
+
+    // ─── Socket.io real-time events ────────────────────────────────────────────
+    socketConnected: (state) => {
+      state.socketConnected = true;
+    },
+    socketDisconnected: (state) => {
+      state.socketConnected = false;
+    },
+    socketMessageReceived: (state, action: PayloadAction<ChatMessage>) => {
+      // Append the real-time message if it doesn't already exist
+      const exists = state.messages.some(m => m.id === action.payload.id);
+      if (!exists) {
+        state.messages.push(action.payload);
+      }
+    },
+    socketTypingUpdate: (state, action: PayloadAction<{ activityId: string; users: string[] }>) => {
+      state.typingUsers[action.payload.activityId] = action.payload.users;
+    },
+
+    // ─── Pagination ─────────────────────────────────────────────────────────────
+    loadMoreMessagesRequest: (state, action: PayloadAction<string>) => {
+      if (!state.loadingActivityIds.includes(action.payload)) {
+        state.loadingActivityIds.push(action.payload);
+      }
+    },
+    loadMoreMessagesSuccess: (
+      state,
+      action: PayloadAction<{ activityId: string; messages: ChatMessage[]; hasMore: boolean }>,
+    ) => {
+      const { activityId, messages, hasMore } = action.payload;
+      state.loadingActivityIds = state.loadingActivityIds.filter(id => id !== activityId);
+      state.hasMoreMessages[activityId] = hasMore;
+
+      // Prepend historical messages (they're older than current messages)
+      const protectedIds = new Set<string>([
+        ...state.editingMessageIds,
+        ...state.locallyEditedIds,
+      ]);
+      const safe = messages.map(serverMsg => {
+        if (protectedIds.has(serverMsg.id)) {
+          const localMsg = state.messages.find(m => m.id === serverMsg.id);
+          return localMsg ?? serverMsg;
+        }
+        return serverMsg;
+      });
+
+      // Filter out duplicates and prepend
+      const existing = new Set(state.messages.map(m => m.id));
+      const newMsgs = safe.filter(m => !existing.has(m.id));
+      state.messages = [...newMsgs, ...state.messages];
+
+      // Update cursor to the oldest message fetched
+      if (messages.length > 0) {
+        state.paginationCursors[activityId] = messages[0].id;
+      }
+    },
   },
 });
 
@@ -307,6 +392,12 @@ export const {
   setTyping,
   markDelivered,
   pinMessage,
+  socketConnected,
+  socketDisconnected,
+  socketMessageReceived,
+  socketTypingUpdate,
+  loadMoreMessagesRequest,
+  loadMoreMessagesSuccess,
 } = chatSlice.actions;
 
 // Messages sorted oldest → newest so the FlatList renders in correct chronological order
@@ -340,5 +431,16 @@ export const selectIsEditing = (messageId: string) =>
 export const selectEditError = (messageId: string) =>
   (state: { chat: ChatState }) =>
     state.chat.editErrorsByMessage[messageId];
+
+export const selectSocketConnected =
+  (state: { chat: ChatState }) => state.chat.socketConnected;
+
+export const selectHasMoreMessages = (activityId: string) =>
+  (state: { chat: ChatState }) =>
+    state.chat.hasMoreMessages[activityId] ?? false;
+
+export const selectPaginationCursor = (activityId: string) =>
+  (state: { chat: ChatState }) =>
+    state.chat.paginationCursors[activityId] ?? null;
 
 export default chatSlice.reducer;

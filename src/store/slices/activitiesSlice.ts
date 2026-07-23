@@ -96,6 +96,15 @@ const activitiesSlice = createSlice({
       }
       state.joinError = null;
       state.lastJoinedId = null;
+
+      // ─── OPTIMISTIC UPDATE ────────────────────────────────────────────────────
+      // Immediately add the activityId to myJoined so UI reflects join state
+      // before the server responds. If join fails, saga will dispatch failure
+      // which removes the id from joiningIds but leaves myJoined intact (user
+      // can retry). This prevents double-join if user taps button twice.
+      if (!state.myJoined.includes(action.payload)) {
+        state.myJoined.push(action.payload);
+      }
     },
     joinActivitySuccess: (state, action: PayloadAction<Activity>) => {
       const index = state.activities.findIndex(item => item.id === action.payload.id);
@@ -109,6 +118,8 @@ const activitiesSlice = createSlice({
     joinActivityFailure: (state, action: PayloadAction<{ activityId: string; message: string }>) => {
       state.joiningIds = state.joiningIds.filter(id => id !== action.payload.activityId);
       state.joinError = action.payload.message;
+      // Roll back the optimistic join — server rejected the request
+      state.myJoined = state.myJoined.filter(id => id !== action.payload.activityId);
     },
     clearJoinActivityState: (state) => {
       state.joinError = null;

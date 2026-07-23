@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
-  TextInput, RefreshControl, ListRenderItemInfo, ActivityIndicator,
+  TextInput, RefreshControl, ListRenderItemInfo,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -10,6 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootState } from '../../store';
 import { ActivitiesStackParamList, Activity, ActivityCategory } from '../../types';
 import { selectAllActivities, joinActivityRequest, fetchActivitiesRequest, fetchActivitiesRefresh } from '../../store/slices/activitiesSlice';
+import SkeletonCard from '../../components/SkeletonCard';
 import { C } from '../../theme';
 
 type Props = NativeStackScreenProps<ActivitiesStackParamList, 'ActivitiesMain'>;
@@ -147,10 +148,13 @@ export default function ActivitiesScreen({ navigation }: Props): React.JSX.Eleme
       </View>
       {joinError && <Text style={styles.joinError}>{joinError}</Text>}
       {loading && activities.length === 0 ? (
-        <View style={styles.loadingWrap}>
-          <ActivityIndicator size="large" color={C.btnActive} />
-          <Text style={styles.loadingText}>Loading activities...</Text>
-        </View>
+        <FlatList
+          data={[1, 2, 3, 4]}
+          keyExtractor={i => String(i)}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 100 }}
+          renderItem={() => <SkeletonCard variant="activity" />}
+          showsVerticalScrollIndicator={false}
+        />
       ) : (
       <FlatList<Activity>
         data={paginated} keyExtractor={item => item.id} renderItem={renderItem}
@@ -230,8 +234,6 @@ const styles = StyleSheet.create({
 
   loadMore: { alignItems: 'center', paddingVertical: 16 },
   loadMoreText: { fontSize: 13, color: C.textMuted },
-  loadingWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
-  loadingText: { fontSize: 14, color: C.textMuted },
 
   emptyContainer: { alignItems: 'center', paddingTop: 40, paddingHorizontal: 32 },
   emptyIllustration: { fontSize: 80, marginBottom: 16 },

@@ -1,5 +1,5 @@
 import { call, put, takeLatest } from 'redux-saga/effects';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { setSentryUser, clearSentryUser, captureError } from '../../utils/errorReporting';
 import {
   loginRequest,
   signUpRequest,
@@ -23,13 +23,8 @@ import {
 } from '../slices/authSlice';
 import { authService, AuthResponse, AuthUser, UserStats, setAuthToken, clearAuthToken } from '../../services';
 import { UpdateProfilePayload } from '../../services/authService';
+import { secureStorage, userStorage } from '../../services/secureStorage';
 import { User } from '../../types';
-
-// ─── Storage Keys ─────────────────────────────────────────────────────────────
-
-const USER_KEY          = '@neighbour_user';
-const TOKEN_KEY         = '@neighbour_token';
-const REFRESH_TOKEN_KEY = '@neighbour_refresh_token';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -51,41 +46,33 @@ function mapAuthUserToUser(authUser: AuthUser): User {
   };
 }
 
-/** Persist all three auth values to AsyncStorage. */
+/** Persist all auth values to secure storage. */
 function* persistAuthData(user: User, token: string, refreshToken: string) {
-  yield call([AsyncStorage, AsyncStorage.setItem], USER_KEY, JSON.stringify(user));
-  yield call([AsyncStorage, AsyncStorage.setItem], TOKEN_KEY, token);
-  yield call([AsyncStorage, AsyncStorage.setItem], REFRESH_TOKEN_KEY, refreshToken);
+  // User profile goes to AsyncStorage (non-sensitive)
+  yield call([userStorage, userStorage.setUser], user as unknown as Record<string, unknown>);
+  // Tokens go to Keychain (encrypted)
+  yield call([secureStorage, secureStorage.setTokens], token, refreshToken);
 }
 
-/** Clear all three auth values from AsyncStorage. */
+/** Clear all auth data from both secure storage and AsyncStorage. */
 function* clearAuthData() {
-  yield call([AsyncStorage, AsyncStorage.removeItem], USER_KEY);
-  yield call([AsyncStorage, AsyncStorage.removeItem], TOKEN_KEY);
-  yield call([AsyncStorage, AsyncStorage.removeItem], REFRESH_TOKEN_KEY);
+  yield call([userStorage, userStorage.clearUser]);
+  yield call([secureStorage, secureStorage.clearTokens]);
 }
 
 /**
  * Calls GET /auth/me and dispatches fetchMeSuccess with the fresh profile.
- * Also overwrites the stored user in AsyncStorage so auto-login always
- * restores the latest profile data.
- *
- * On failure it dispatches fetchMeFailure — session stays alive.
+ * Also overwrites the stored user so auto-login always restores the latest profile.
  */
 function* fetchAndStoreMe() {
   try {
     yield put(fetchMeRequest());
-
     const authUser: AuthUser = yield call(authService.getMe);
     const user = mapAuthUserToUser(authUser);
-
-    // Overwrite persisted user with fresh data from the server
-    yield call([AsyncStorage, AsyncStorage.setItem], USER_KEY, JSON.stringify(user));
-
+    yield call([userStorage, userStorage.setUser], user as unknown as Record<string, unknown>);
     yield put(fetchMeSuccess(user));
   } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : 'Failed to load profile.';
+    const message = error instanceof Error ? error.message : 'Failed to load profile.';
     yield put(fetchMeFailure(message));
   }
 }
@@ -104,24 +91,24 @@ function* handleSignUp(action: ReturnType<typeof signUpRequest>) {
     }
 
     const response: AuthResponse = yield call(authService.signUp, { name, email, password });
-
-    // Map response user as initial state, then fetch full profile
     const user = mapAuthUserToUser(response.user);
 
     yield* persistAuthData(user, response.token, response.refreshToken);
     setAuthToken(response.token);
 
-    // Commit initial state to Redux immediately so the app can navigate
     yield put(loginSuccess({
       user,
       token:        response.token,
       refreshToken: response.refreshToken,
     }));
 
-    // Then fetch the authoritative profile from /auth/me and overwrite
+    // Set Sentry user context so errors are tagged to the logged-in user
+    setSentryUser(user.id ?? user.email, user.email);
+
     yield* fetchAndStoreMe();
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Sign up failed. Please try again.';
+    captureError(error, { saga: 'handleSignUp' });
     yield put(loginFailure(message));
   }
 }
@@ -139,7 +126,6 @@ function* handleLogin(action: ReturnType<typeof loginRequest>) {
     }
 
     const response: AuthResponse = yield call(authService.login, { email, password });
-
     const user = mapAuthUserToUser(response.user);
 
     yield* persistAuthData(user, response.token, response.refreshToken);
@@ -151,31 +137,27 @@ function* handleLogin(action: ReturnType<typeof loginRequest>) {
       refreshToken: response.refreshToken,
     }));
 
-    // Fetch full profile from /auth/me and overwrite with fresh data
+    // Set Sentry user context
+    setSentryUser(user.id ?? user.email, user.email);
+
     yield* fetchAndStoreMe();
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Login failed. Please try again.';
+    captureError(error, { saga: 'handleLogin' });
     yield put(loginFailure(message));
   }
 }
 
 // ─── Fetch Me (manual dispatch) ───────────────────────────────────────────────
-/**
- * Handles explicit fetchMeRequest dispatches from anywhere in the app
- * (e.g. pull-to-refresh on ProfileScreen).
- * Note: fetchAndStoreMe() also dispatches fetchMeRequest internally, so
- * we guard against double-processing with takeLatest (cancels previous run).
- */
+
 function* handleFetchMe() {
   try {
     const authUser: AuthUser = yield call(authService.getMe);
     const user = mapAuthUserToUser(authUser);
-
-    yield call([AsyncStorage, AsyncStorage.setItem], USER_KEY, JSON.stringify(user));
+    yield call([userStorage, userStorage.setUser], user as unknown as Record<string, unknown>);
     yield put(fetchMeSuccess(user));
   } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : 'Failed to load profile.';
+    const message = error instanceof Error ? error.message : 'Failed to load profile.';
     yield put(fetchMeFailure(message));
   }
 }
@@ -190,17 +172,15 @@ function* handleRefreshToken(action: ReturnType<typeof refreshTokenRequest>) {
       refreshToken: currentRefreshToken,
     });
 
-    const storedUser: string | null = yield call(
-      [AsyncStorage, AsyncStorage.getItem],
-      USER_KEY,
+    const storedUser: Record<string, unknown> | null = yield call(
+      [userStorage, userStorage.getUser],
     );
     const user: User = storedUser
-      ? JSON.parse(storedUser)
+      ? (storedUser as unknown as User)
       : mapAuthUserToUser(response.user);
 
-    yield call([AsyncStorage, AsyncStorage.setItem], TOKEN_KEY, response.token);
-    yield call([AsyncStorage, AsyncStorage.setItem], REFRESH_TOKEN_KEY, response.refreshToken);
-
+    // Update stored tokens securely
+    yield call([secureStorage, secureStorage.setTokens], response.token, response.refreshToken);
     setAuthToken(response.token);
 
     yield put(refreshTokenSuccess({
@@ -224,30 +204,22 @@ function* handleRefreshToken(action: ReturnType<typeof refreshTokenRequest>) {
 
 function* handleAutoLogin() {
   try {
-    const storedUser: string | null = yield call(
-      [AsyncStorage, AsyncStorage.getItem],
-      USER_KEY,
+    const storedUser: Record<string, unknown> | null = yield call(
+      [userStorage, userStorage.getUser],
     );
-    const storedToken: string | null = yield call(
-      [AsyncStorage, AsyncStorage.getItem],
-      TOKEN_KEY,
-    );
-    const storedRefreshToken: string | null = yield call(
-      [AsyncStorage, AsyncStorage.getItem],
-      REFRESH_TOKEN_KEY,
+    const storedTokens: { token: string; refreshToken: string } | null = yield call(
+      [secureStorage, secureStorage.getTokens],
     );
 
-    if (storedUser && storedToken && storedRefreshToken) {
-      // Restore session from storage immediately so the app can navigate
-      setAuthToken(storedToken);
+    if (storedUser && storedTokens) {
+      setAuthToken(storedTokens.token);
       yield put(loginSuccess({
-        user:         JSON.parse(storedUser),
-        token:        storedToken,
-        refreshToken: storedRefreshToken,
+        user:         storedUser as unknown as User,
+        token:        storedTokens.token,
+        refreshToken: storedTokens.refreshToken,
       }));
 
-      // Silently fetch fresh profile in the background — the 401 interceptor
-      // will auto-refresh the token if it has expired before this call lands
+      // Silently refresh profile in the background
       yield* fetchAndStoreMe();
     } else {
       yield put(autoLoginCheckedDone());
@@ -263,7 +235,7 @@ function* handleUpdateProfile(action: ReturnType<typeof updateProfileRequest>) {
   try {
     const authUser: AuthUser = yield call(authService.updateMe, action.payload as UpdateProfilePayload);
     const user = mapAuthUserToUser(authUser);
-    yield call([AsyncStorage, AsyncStorage.setItem], USER_KEY, JSON.stringify(user));
+    yield call([userStorage, userStorage.setUser], user as unknown as Record<string, unknown>);
     yield put(updateProfileSuccess(user));
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to update profile.';
@@ -284,14 +256,13 @@ function* handleFetchStats() {
 
 function* handleLogout() {
   try {
-    // Local logout must still complete if the device is offline or the session
-    // has already expired, so the server call is deliberately best-effort.
     yield call(authService.logout);
   } catch {
-    // Nothing to do: clearing local credentials below safely signs the user out.
+    // Best-effort server logout — still clear local credentials
   } finally {
     yield* clearAuthData();
     clearAuthToken();
+    clearSentryUser();
   }
 }
 

@@ -50,14 +50,18 @@ function unwrapMessage(
 
 export const chatService = {
   /**
-   * GET /chat/{activityId}/messages
-   * Returns all messages for an activity, sorted by the server.
+   * GET /chat/{activityId}/messages?before={cursor}&limit=30
+   * Returns messages for an activity. Pass a cursor (message id) to load
+   * older messages for pagination.
    */
-  getActivityMessages: async (activityId: string): Promise<ChatMessage[]> => {
+  getActivityMessages: async (activityId: string, cursor?: string): Promise<ChatMessage[]> => {
+    const params: Record<string, string> = { limit: '30' };
+    if (cursor) params.before = cursor;
+
     const response = await apiClient.get<
       | ChatMessageResponse[]
       | { data?: ChatMessageResponse[]; messages?: ChatMessageResponse[] }
-    >(`/chat/${activityId}/messages`);
+    >(`/chat/${activityId}/messages`, { params });
     const payload = Array.isArray(response.data)
       ? response.data
       : response.data.data ?? response.data.messages ?? [];

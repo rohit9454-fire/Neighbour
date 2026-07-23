@@ -4,11 +4,13 @@ import axios, {
   InternalAxiosRequestConfig,
 } from 'axios';
 
-// Base URL is read from the .env file so staging/prod can be switched without
-// code changes. Falls back to the production URL if the variable is missing.
-const BASE_URL =
-  process.env.API_BASE_URL ??
-  'https://neighbourconnect-s2lb-production.up.railway.app';
+// ─── Base URL ─────────────────────────────────────────────────────────────────
+// process.env variables are NOT automatically available in React Native —
+// Metro does not load .env files. The URL is hardcoded here as the single
+// source of truth. To use a different URL per environment, either:
+//   1. Use react-native-config and reference Config.API_BASE_URL, or
+//   2. Replace the string below per build variant.
+const BASE_URL = 'https://neighbourconnect-s2lb-production.up.railway.app';
 
 const apiClient = axios.create({
   baseURL: BASE_URL,
@@ -53,7 +55,15 @@ export function clearAuthToken(): void {
 // ─── Request Interceptor ──────────────────────────────────────────────────────
 
 apiClient.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => config,
+  (config: InternalAxiosRequestConfig) => {
+    if (__DEV__) {
+      console.log(
+        `[API] ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`,
+        config.data ? JSON.stringify(config.data) : '',
+      );
+    }
+    return config;
+  },
   (error: AxiosError) => Promise.reject(error),
 );
 
@@ -85,18 +95,33 @@ apiClient.interceptors.response.use(
   (response: AxiosResponse) => response,
 
   async (error: AxiosError<{ message?: string; error?: string }>) => {
+    // ── Network / timeout errors (no response at all) ──────────────────────────
+    // error.response is undefined when the device can't reach the server.
+    if (!error.response) {
+      const isTimeout = error.code === 'ECONNABORTED';
+      const networkMessage = isTimeout
+        ? 'Request timed out. Please check your connection and try again.'
+        : 'Network error. Please check your internet connection.';
+      return Promise.reject(new Error(networkMessage));
+    }
+
     const originalRequest = error.config as InternalAxiosRequestConfig & {
       _retry?: boolean;
     };
 
     // ── Non-401 errors: surface the server message and reject ─────────────────
-    if (error.response?.status !== 401) {
+    if (error.response.status !== 401) {
       const message =
-        error.response?.data?.message ??
-        error.response?.data?.error ??
+        error.response.data?.message ??
+        error.response.data?.error ??
         error.message ??
         'Something went wrong. Please try again.';
       return Promise.reject(new Error(message));
+    }
+
+    // ── Guard: if config is missing we cannot retry ────────────────────────────
+    if (!originalRequest) {
+      return Promise.reject(new Error('Session expired. Please log in again.'));
     }
 
     // ── Already retried once → give up to avoid infinite loop ─────────────────
@@ -126,7 +151,6 @@ apiClient.interceptors.response.use(
     const storedRefreshToken = _store?.getState().auth.refreshToken ?? null;
 
     if (!storedRefreshToken) {
-      // No refresh token available — force logout immediately
       isRefreshing = false;
       processQueue(new Error('No refresh token'), null);
       _store?.dispatch({ type: 'auth/refreshTokenFailure' });
@@ -134,7 +158,6 @@ apiClient.interceptors.response.use(
     }
 
     try {
-      // Call /auth/refresh directly (bypasses the interceptor via a plain import)
       const { authService } = await import('./authService');
       const refreshResponse = await authService.refresh({
         refreshToken: storedRefreshToken,
@@ -143,29 +166,23 @@ apiClient.interceptors.response.use(
       const newToken        = refreshResponse.token;
       const newRefreshToken = refreshResponse.refreshToken;
 
-      // Update Axios header globally
       setAuthToken(newToken);
 
-      // Notify Redux + AsyncStorage via the saga
       _store?.dispatch({
         type: 'auth/refreshTokenRequest',
         payload: storedRefreshToken,
       });
 
-      // Directly update slice state with the new pair (saga will also persist)
       _store?.dispatch({
         type: 'auth/refreshTokenSuccess',
         payload: { token: newToken, refreshToken: newRefreshToken },
       });
 
-      // Unblock all queued requests with the new token
       processQueue(null, newToken);
 
-      // Replay the original failed request
       originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
       return apiClient(originalRequest);
     } catch (refreshError: unknown) {
-      // Refresh itself failed → force full logout
       processQueue(refreshError, null);
       clearAuthToken();
       _store?.dispatch({ type: 'auth/refreshTokenFailure' });
