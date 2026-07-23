@@ -1,71 +1,280 @@
-import React from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ListRenderItemInfo, Alert } from 'react-native';
+import React, { useCallback, useEffect } from 'react';
+import {
+  View, Text, FlatList, TouchableOpacity, StyleSheet,
+  RefreshControl, ListRenderItemInfo, Alert,
+} from 'react-native';import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Group, GroupsStackParamList } from '../../types';
+import { useDispatch, useSelector } from 'react-redux';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Group, GroupsStackParamList } from '../../types';
+import {
+  fetchGroupsRequest, fetchGroupsRefresh,
+  joinGroupRequest, clearJoinError,
+  selectAllGroups, selectGroupsLoading, selectGroupsRefreshing,
+  selectGroupsError, selectJoiningIds, selectJoinedIds, selectJoinError,
+} from '../../store/slices/groupsSlice';
+import { RootState } from '../../store';
+import { C } from '../../theme';
 
 type Props = NativeStackScreenProps<GroupsStackParamList, 'GroupsMain'>;
 
-const GROUPS: Group[] = [
-  { id: '1', emoji: '⚽', name: 'Sunday Football Club', members: 18, category: 'Sports' },
-  { id: '2', emoji: '🎭', name: 'Cultural Society', members: 42, category: 'Culture' },
-  { id: '3', emoji: '🏏', name: 'Cricket Lovers', members: 25, category: 'Sports' },
-  { id: '4', emoji: '🎨', name: 'Art & Craft Circle', members: 15, category: 'Hobby' },
-  { id: '5', emoji: '🍕', name: 'Food & Potluck Gang', members: 30, category: 'Social' },
-];
+// ─── Category helpers ─────────────────────────────────────────────────────────
 
-export default function GroupsScreen({ navigation }: Props): React.JSX.Element {
-  const renderItem = ({ item }: ListRenderItemInfo<Group>) => (
-    <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('GroupDetail', { group: item })}>
-      <Text style={styles.emoji}>{item.emoji}</Text>
-      <View style={styles.info}>
-        <Text style={styles.name}>{item.name}</Text>
-        <Text style={styles.meta}>{item.members} members · {item.category}</Text>
+const CAT_EMOJI: Record<string, string> = {
+  Sports: '⚽', Culture: '🎭', Social: '🎉',
+  Hobby: '🎨', Community: '🏘️', Other: '📌',
+};
+const CAT_BG: Record<string, string> = {
+  Sports: '#DBEAFE', Culture: '#EDE9FE', Social: '#FCE7F3',
+  Hobby: '#D1FAE5', Community: '#FEF3C7', Other: C.bgMuted,
+};
+const CAT_FG: Record<string, string> = {
+  Sports: '#1D4ED8', Culture: '#6D28D9', Social: '#BE185D',
+  Hobby: '#065F46', Community: '#92400E', Other: C.textSecondary,
+};
+
+// ─── Skeleton card ────────────────────────────────────────────────────────────
+
+function SkeletonCard(): React.JSX.Element {
+  return (
+    <View style={sk.card}>
+      <View style={sk.avatar} />
+      <View style={sk.lines}>
+        <View style={[sk.line, { width: '60%' }]} />
+        <View style={[sk.line, { width: '40%', marginTop: 8 }]} />
       </View>
-      <TouchableOpacity style={styles.joinBtn}>
-        <Text style={styles.joinText}>Join</Text>
+      <View style={sk.btn} />
+    </View>
+  );
+}
+
+const sk = StyleSheet.create({
+  card: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: C.bgCard, borderRadius: 18,
+    padding: 16, marginBottom: 12,
+  },
+  avatar: { width: 52, height: 52, borderRadius: 14, backgroundColor: C.bgMuted, marginRight: 14 },
+  lines: { flex: 1 },
+  line: { height: 10, backgroundColor: C.bgMuted, borderRadius: 6 },
+  btn: { width: 56, height: 34, borderRadius: 10, backgroundColor: C.bgMuted },
+});
+
+// ─── Group card ───────────────────────────────────────────────────────────────
+
+interface GroupCardProps {
+  item: Group;
+  joined: boolean;
+  joining: boolean;
+  onPress: () => void;
+  onJoin: () => void;
+}
+
+function GroupCard({ item, joined, joining, onPress, onJoin }: GroupCardProps): React.JSX.Element {
+  const cat   = item.category ?? 'Other';
+  const emoji = item.emoji ?? CAT_EMOJI[cat] ?? '📌';
+  const bg    = CAT_BG[cat]  ?? C.bgMuted;
+  const fg    = CAT_FG[cat]  ?? C.textSecondary;
+
+  return (
+    <TouchableOpacity style={s.card} onPress={onPress} activeOpacity={0.85}>
+      {/* Emoji box */}
+      <View style={[s.emojiBox, { backgroundColor: bg }]}>
+        <Text style={s.emojiTxt}>{emoji}</Text>
+      </View>
+
+      {/* Info */}
+      <View style={s.info}>
+        <Text style={s.name} numberOfLines={1}>{item.name}</Text>
+        <View style={s.metaRow}>
+          <View style={[s.catPill, { backgroundColor: bg }]}>
+            <Text style={[s.catPillTxt, { color: fg }]}>{cat}</Text>
+          </View>
+          <View style={s.memberRow}>
+            <Icon name="account-multiple" size={12} color={C.textMuted} />
+            <Text style={s.memberTxt}>{item.members} members</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Join button */}
+      <TouchableOpacity
+        style={[s.joinBtn, joined && s.joinBtnDone]}
+        onPress={onJoin}
+        disabled={joining || joined}
+        activeOpacity={0.8}>
+        <Text style={[s.joinTxt, joined && s.joinTxtDone]}>
+          {joining ? '...' : joined ? '✓ Joined' : 'Join'}
+        </Text>
       </TouchableOpacity>
     </TouchableOpacity>
   );
+}
+
+// ─── Screen ───────────────────────────────────────────────────────────────────
+
+export default function GroupsScreen({ navigation }: Props): React.JSX.Element {
+  const dispatch    = useDispatch();
+  const groups      = useSelector(selectAllGroups);
+  const loading     = useSelector(selectGroupsLoading);
+  const refreshing  = useSelector(selectGroupsRefreshing);
+  const error       = useSelector(selectGroupsError);
+  const joiningIds  = useSelector(selectJoiningIds);
+  const joinedIds   = useSelector(selectJoinedIds);
+  const joinError   = useSelector(selectJoinError);
+
+  useEffect(() => {
+    dispatch(fetchGroupsRequest());
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (!joinError) return;
+    Alert.alert('Could not join group', joinError, [
+      { text: 'OK', onPress: () => dispatch(clearJoinError()) },
+    ]);
+  }, [joinError, dispatch]);
+
+  const onRefresh = useCallback(() => {
+    dispatch(fetchGroupsRefresh());
+  }, [dispatch]);
+
+  const renderItem = ({ item }: ListRenderItemInfo<Group>) => (
+    <GroupCard
+      item={item}
+      joined={joinedIds.includes(item.id)}
+      joining={joiningIds.includes(item.id)}
+      onPress={() => navigation.navigate('GroupDetail', { group: item })}
+      onJoin={() => dispatch(joinGroupRequest(item.id))}
+    />
+  );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Community Groups</Text>
+    <SafeAreaView style={s.root} edges={['top']}>
+      {/* Header */}
+      <View style={s.header}>
+        <View>
+          <Text style={s.headerTitle}>Community Groups</Text>
+          {groups.length > 0 && (
+            <Text style={s.headerSub}>{groups.length} groups in your neighbourhood</Text>
+          )}
+        </View>
         <TouchableOpacity
-          style={styles.createBtn}
-          onPress={() =>
-            Alert.alert('Coming Soon', 'Group creation will be available in a future update.')
-          }>
-          <Text style={styles.createBtnText}>+ New</Text>
+          style={s.createBtn}
+          onPress={() => navigation.navigate('CreateGroup')}>
+          <Icon name="plus" size={16} color={C.btnActive} />
+          <Text style={s.createBtnTxt}>New</Text>
         </TouchableOpacity>
       </View>
 
-      <FlatList<Group>
-        data={GROUPS}
-        keyExtractor={(item: Group) => item.id}
-        contentContainerStyle={{ padding: 12 }}
-        renderItem={renderItem}
-      />
+      {/* Error banner */}
+      {error && !loading && (
+        <View style={s.errorBanner}>
+          <Icon name="alert-circle-outline" size={16} color={C.danger} />
+          <Text style={s.errorTxt}>{error}</Text>
+          <TouchableOpacity onPress={() => dispatch(fetchGroupsRequest())}>
+            <Text style={s.retryTxt}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* List */}
+      {loading && groups.length === 0 ? (
+        // Skeleton while initial load
+        <FlatList
+          data={[1, 2, 3, 4, 5]}
+          keyExtractor={i => String(i)}
+          contentContainerStyle={s.list}
+          renderItem={() => <SkeletonCard />}
+          showsVerticalScrollIndicator={false}
+        />
+      ) : (
+        <FlatList<Group>
+          data={groups}
+          keyExtractor={item => item.id}
+          contentContainerStyle={s.list}
+          showsVerticalScrollIndicator={false}
+          renderItem={renderItem}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={C.btnActive}
+              colors={[C.btnActive]}
+            />
+          }
+          ListEmptyComponent={
+            <View style={s.empty}>
+              <Text style={s.emptyEmoji}>🏘️</Text>
+              <Text style={s.emptyTitle}>No groups yet</Text>
+              <Text style={s.emptySub}>Be the first to create a community group!</Text>
+            </View>
+          }
+        />
+      )}
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F3F4F6' },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, backgroundColor: '#4F46E5' },
-  headerTitle: { fontSize: 20, fontWeight: '800', color: '#fff' },
-  createBtn: { backgroundColor: '#fff', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8 },
-  createBtnText: { color: '#4F46E5', fontWeight: '700', fontSize: 13 },
-  card: {
-    flexDirection: 'row', backgroundColor: '#fff', borderRadius: 14, padding: 14,
-    marginBottom: 10, alignItems: 'center', elevation: 2,
-    shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 6, shadowOffset: { width: 0, height: 2 },
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const s = StyleSheet.create({
+  root: { flex: 1, backgroundColor: C.bg },
+
+  header: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: 20, paddingTop: 14, paddingBottom: 16,
+    backgroundColor: C.btnActive,
   },
-  emoji: { fontSize: 36, marginRight: 12 },
-  info: { flex: 1 },
-  name: { fontSize: 15, fontWeight: '700', color: '#111827' },
-  meta: { fontSize: 12, color: '#6B7280', marginTop: 3 },
-  joinBtn: { backgroundColor: '#EEF2FF', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 },
-  joinText: { color: '#4F46E5', fontWeight: '700', fontSize: 13 },
+  headerTitle: { fontSize: 22, fontWeight: '800', color: C.textWhite },
+  headerSub:   { fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 2 },
+  createBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    backgroundColor: C.textWhite, borderRadius: 20,
+    paddingHorizontal: 14, paddingVertical: 8,
+  },
+  createBtnTxt: { color: C.btnActive, fontWeight: '700', fontSize: 13 },
+
+  errorBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: C.dangerBg, paddingHorizontal: 16, paddingVertical: 10,
+    borderBottomWidth: 1, borderBottomColor: C.danger,
+  },
+  errorTxt:  { flex: 1, fontSize: 13, color: C.danger },
+  retryTxt:  { fontSize: 13, color: C.danger, fontWeight: '700' },
+
+  list: { padding: 16, paddingBottom: 40 },
+
+  card: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: C.bgCard, borderRadius: 18,
+    padding: 14, marginBottom: 12,
+    shadowColor: C.shadow, shadowOpacity: 0.08,
+    shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 2,
+  },
+  emojiBox: {
+    width: 52, height: 52, borderRadius: 14,
+    justifyContent: 'center', alignItems: 'center', marginRight: 14,
+  },
+  emojiTxt: { fontSize: 26 },
+  info:     { flex: 1, marginRight: 8 },
+  name:     { fontSize: 15, fontWeight: '700', color: C.textPrimary, marginBottom: 6 },
+  metaRow:  { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+  catPill:  { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
+  catPillTxt: { fontSize: 10, fontWeight: '700' },
+  memberRow:  { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  memberTxt:  { fontSize: 11, color: C.textMuted },
+
+  joinBtn: {
+    backgroundColor: C.bgMuted, borderRadius: 10,
+    paddingHorizontal: 14, paddingVertical: 8,
+    borderWidth: 1, borderColor: C.btnActive,
+  },
+  joinBtnDone: { backgroundColor: C.successBg, borderColor: C.success },
+  joinTxt:     { fontSize: 12, color: C.btnActive, fontWeight: '700' },
+  joinTxtDone: { color: C.success },
+
+  empty:      { alignItems: 'center', paddingTop: 60, gap: 10 },
+  emptyEmoji: { fontSize: 56 },
+  emptyTitle: { fontSize: 18, fontWeight: '700', color: C.textPrimary },
+  emptySub:   { fontSize: 13, color: C.textMuted, textAlign: 'center', paddingHorizontal: 32 },
 });

@@ -5,6 +5,7 @@ import eventsReducer from './slices/eventsSlice';
 import activitiesReducer from './slices/activitiesSlice';
 import notificationsReducer from './slices/notificationsSlice';
 import chatReducer from './slices/chatSlice';
+import groupsReducer from './slices/groupsSlice';
 import { rootSaga } from './sagas/rootSaga';
 import { injectStore } from '../services/apiClient';
 
@@ -17,6 +18,7 @@ export const store = configureStore({
     activities: activitiesReducer,
     notifications: notificationsReducer,
     chat: chatReducer,
+    groups: groupsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({ thunk: false }).concat(sagaMiddleware),
@@ -24,10 +26,6 @@ export const store = configureStore({
 
 sagaMiddleware.run(rootSaga);
 
-// ── Break circular dependency ─────────────────────────────────────────────────
-// apiClient cannot import the store directly (would create a cycle).
-// We inject it here after creation so the 401 interceptor can read
-// state.auth.refreshToken and dispatch refresh actions.
 injectStore(store);
 
 export type RootState = ReturnType<typeof store.getState>;

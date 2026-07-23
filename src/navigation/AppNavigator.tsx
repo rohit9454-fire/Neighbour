@@ -28,6 +28,7 @@ import ActivityChatScreen from '../screens/main/ActivityChatScreen';
 // Screens – Groups stack
 import GroupsScreen from '../screens/main/GroupsScreen';
 import GroupDetailScreen from '../screens/main/GroupDetailScreen';
+import CreateGroupScreen from '../screens/main/CreateGroupScreen';
 
 // Screens – Profile
 import ProfileScreen from '../screens/main/ProfileScreen';
@@ -104,9 +105,9 @@ function ChatsTabNavigator(): React.JSX.Element {
 function GroupsStackNavigator(): React.JSX.Element {
   return (
     <GroupsStack.Navigator screenOptions={STACK_OPTS}>
-      <GroupsStack.Screen name="GroupsMain" component={GroupsScreen} />
-      <GroupsStack.Screen name="GroupDetail" component={GroupDetailScreen} />
-      {/* CreateGroup screen can be added here when implemented */}
+      <GroupsStack.Screen name="GroupsMain"   component={GroupsScreen} />
+      <GroupsStack.Screen name="GroupDetail"  component={GroupDetailScreen} />
+      <GroupsStack.Screen name="CreateGroup"  component={CreateGroupScreen} />
     </GroupsStack.Navigator>
   );
 }

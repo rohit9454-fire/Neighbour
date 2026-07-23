@@ -1,3 +1,4 @@
+export { groupsService } from './groupsService';
 export { default as apiClient, setAuthToken, clearAuthToken, injectStore } from './apiClient';
 export { authService } from './authService';
 export { eventsService } from './eventsService';

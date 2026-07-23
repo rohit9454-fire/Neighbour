@@ -3,7 +3,8 @@ import { authSaga } from './authSaga';
 import { eventsSaga } from './eventsSaga';
 import { activitiesSaga } from './activitiesSaga';
 import { chatSaga } from './chatSaga';
+import { groupsSaga } from './groupsSaga';
 
 export function* rootSaga() {
-  yield all([authSaga(), eventsSaga(), activitiesSaga(), chatSaga()]);
+  yield all([authSaga(), eventsSaga(), activitiesSaga(), chatSaga(), groupsSaga()]);
 }

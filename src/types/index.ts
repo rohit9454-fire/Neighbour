@@ -88,12 +88,17 @@ export interface Event {
   isGoing?: boolean;
 }
 
+export type GroupCategory = 'Sports' | 'Culture' | 'Social' | 'Hobby' | 'Community' | 'Other';
+
 export interface Group {
   id: string;
-  emoji: string;
   name: string;
-  members: number;
-  category: EventCategory;
+  category: GroupCategory;
+  // emoji is null from the API — we derive a fallback in the UI
+  emoji?: string | null;
+  members: number;          // mapped from _count.members
+  description?: string | null;
+  createdAt?: string;
 }
 
 export interface ProfileStat {
@@ -173,8 +178,7 @@ export type ActivitiesStackParamList = {
 export type GroupsStackParamList = {
   GroupsMain: undefined;
   GroupDetail: { group: Group };
-  // CreateGroup is not yet implemented; placeholder keeps the type consistent
-  CreateGroup?: undefined;
+  CreateGroup: undefined;
 };
 
 export type ProfileStackParamList = {
