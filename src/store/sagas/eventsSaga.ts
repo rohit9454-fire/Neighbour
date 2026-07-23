@@ -1,33 +1,52 @@
-import { call, put, takeLatest } from 'redux-saga/effects';
-import { addEventRequest, addEventSuccess } from '../slices/eventsSlice';
+import { call, put, takeLatest, takeEvery } from 'redux-saga/effects';
+import { eventsService } from '../../services/eventsService';
 import { Event } from '../../types';
+import {
+  fetchEventsRequest,
+  fetchEventsSuccess,
+  fetchEventsFailure,
+  fetchEventsRefresh,
+  createEventRequest,
+  createEventSuccess,
+  createEventFailure,
+  markGoingRequest,
+  markGoingSuccess,
+  markGoingFailure,
+} from '../slices/eventsSlice';
 
-function generateId(): string {
-  return Date.now().toString();
+function* handleFetchEvents() {
+  try {
+    const events: Event[] = yield call(eventsService.getEvents);
+    yield put(fetchEventsSuccess(events));
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to load events.';
+    yield put(fetchEventsFailure(message));
+  }
 }
 
-const CATEGORY_EMOJIS: Record<string, string> = {
-  Sports: '⚽',
-  Culture: '🎭',
-  Social: '🎉',
-  Hobby: '🎨',
-  Other: '📌',
-};
+function* handleCreateEvent(action: ReturnType<typeof createEventRequest>) {
+  try {
+    const event: Event = yield call(eventsService.createEvent, action.payload);
+    yield put(createEventSuccess(event));
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to create event.';
+    yield put(createEventFailure(message));
+  }
+}
 
-function* handleAddEvent(action: ReturnType<typeof addEventRequest>) {
-  const { title, date, location, category } = action.payload;
-  const newEvent: Event = {
-    id: (yield call(generateId)) as string,
-    emoji: CATEGORY_EMOJIS[category ?? 'Other'] ?? '📌',
-    title,
-    date,
-    location,
-    going: 1,
-    category,
-  };
-  yield put(addEventSuccess(newEvent));
+function* handleMarkGoing(action: ReturnType<typeof markGoingRequest>) {
+  try {
+    const event: Event = yield call(eventsService.markGoing, action.payload);
+    yield put(markGoingSuccess(event));
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to mark as going.';
+    yield put(markGoingFailure({ eventId: action.payload, message }));
+  }
 }
 
 export function* eventsSaga() {
-  yield takeLatest(addEventRequest.type, handleAddEvent);
+  yield takeLatest(fetchEventsRequest.type, handleFetchEvents);
+  yield takeLatest(fetchEventsRefresh.type, handleFetchEvents);
+  yield takeLatest(createEventRequest.type, handleCreateEvent);
+  yield takeEvery(markGoingRequest.type,    handleMarkGoing);
 }

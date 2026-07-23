@@ -1,16 +1,20 @@
 import React, { useCallback, useEffect } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
-  RefreshControl, ListRenderItemInfo,
+  RefreshControl, ListRenderItemInfo, ScrollView, ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSelector, useDispatch } from 'react-redux';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootState } from '../../store';
-import { HomeStackParamList, Activity } from '../../types';
+import { HomeStackParamList, Activity, Event } from '../../types';
 import { selectAllActivities, joinActivityRequest, fetchActivitiesRequest, fetchActivitiesRefresh } from '../../store/slices/activitiesSlice';
 import { selectUnreadCount } from '../../store/slices/notificationsSlice';
+import {
+  fetchEventsRequest, fetchEventsRefresh,
+  selectAllEvents, selectEventsLoading,
+} from '../../store/slices/eventsSlice';
 import { C } from '../../theme';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'HomeMain'>;
@@ -22,6 +26,57 @@ const BULLETINS = [
 ];
 
 const ACTIVE_USERS = ['Rahul', 'Priya', 'Vikram', 'Neha', 'Amit', 'Dev'];
+
+// ─── Event card helpers ───────────────────────────────────────────────────────
+
+const EV_CAT_BG:  Record<string, string> = {
+  Sports: '#DBEAFE', Culture: '#EDE9FE', Social: '#FCE7F3', Hobby: '#D1FAE5', Other: C.bgMuted,
+};
+const EV_CAT_FG:  Record<string, string> = {
+  Sports: '#1D4ED8', Culture: '#6D28D9', Social: '#BE185D', Hobby: '#065F46', Other: C.textSecondary,
+};
+const EV_EMOJI:   Record<string, string> = {
+  Sports: '⚽', Culture: '🎭', Social: '🎉', Hobby: '🎨', Other: '📌',
+};
+
+function fmtEventDate(iso: string): string {
+  try {
+    return new Date(iso).toLocaleDateString('en-IN', {
+      weekday: 'short', day: 'numeric', month: 'short',
+      hour: '2-digit', minute: '2-digit',
+    });
+  } catch { return iso; }
+}
+
+function EventCard({ item, onPress }: { item: Event; onPress: () => void }): React.JSX.Element {
+  const cat   = item.category ?? 'Other';
+  const emoji = item.emoji ?? EV_EMOJI[cat] ?? '📌';
+  const bg    = EV_CAT_BG[cat] ?? C.bgMuted;
+  const fg    = EV_CAT_FG[cat] ?? C.textSecondary;
+  return (
+    <TouchableOpacity style={evS.card} onPress={onPress} activeOpacity={0.85}>
+      <View style={[evS.emojiBox, { backgroundColor: bg }]}>
+        <Text style={evS.emoji}>{emoji}</Text>
+      </View>
+      <View style={[evS.catPill, { backgroundColor: bg }]}>
+        <Text style={[evS.catPillTxt, { color: fg }]}>{cat}</Text>
+      </View>
+      <Text style={evS.title} numberOfLines={2}>{item.title}</Text>
+      <View style={evS.meta}>
+        <Icon name="map-marker" size={11} color={C.textMuted} />
+        <Text style={evS.metaTxt} numberOfLines={1}>{item.location}</Text>
+      </View>
+      <View style={evS.meta}>
+        <Icon name="calendar" size={11} color={C.textMuted} />
+        <Text style={evS.metaTxt} numberOfLines={1}>{fmtEventDate(item.date)}</Text>
+      </View>
+      <View style={evS.footer}>
+        <Icon name="account-group" size={13} color={C.btnInactive} />
+        <Text style={evS.goingTxt}>{item.going} going</Text>
+      </View>
+    </TouchableOpacity>
+  );
+}
 
 function SkeletonCard(): React.JSX.Element {
   return (
@@ -83,22 +138,26 @@ function ActivityCard({ item, onPress, onJoin, joined, joining, isOwner }: {
 }
 
 export default function HomeScreen({ navigation }: Props): React.JSX.Element {
-  const dispatch = useDispatch();
-  const user = useSelector((state: RootState) => state.auth.user);
-  const activities = useSelector(selectAllActivities);
-  const unreadCount = useSelector(selectUnreadCount);
-  const myJoinedIds = useSelector((state: RootState) => state.activities.myJoined);
-  const loading = useSelector((state: RootState) => state.activities.loading);
+  const dispatch       = useDispatch();
+  const user           = useSelector((state: RootState) => state.auth.user);
+  const activities     = useSelector(selectAllActivities);
+  const events         = useSelector(selectAllEvents);
+  const eventsLoading  = useSelector(selectEventsLoading);
+  const unreadCount    = useSelector(selectUnreadCount);
+  const myJoinedIds    = useSelector((state: RootState) => state.activities.myJoined);
+  const loading        = useSelector((state: RootState) => state.activities.loading);
   const refreshingStore = useSelector((state: RootState) => state.activities.refreshing);
-  const joiningIds = useSelector((state: RootState) => state.activities.joiningIds);
-  const joinError = useSelector((state: RootState) => state.activities.joinError);
+  const joiningIds     = useSelector((state: RootState) => state.activities.joiningIds);
+  const joinError      = useSelector((state: RootState) => state.activities.joinError);
 
   useEffect(() => {
     dispatch(fetchActivitiesRequest());
+    dispatch(fetchEventsRequest());
   }, [dispatch]);
 
   const onRefresh = useCallback(() => {
     dispatch(fetchActivitiesRefresh());
+    dispatch(fetchEventsRefresh());
   }, [dispatch]);
 
   const handleJoin = (activity: Activity) => {
@@ -193,7 +252,43 @@ export default function HomeScreen({ navigation }: Props): React.JSX.Element {
         ))}
       </View>
 
+      {/* ── Community Events ─────────────────────────────────────────────── */}
       <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Community Events 🎉</Text>
+        <TouchableOpacity onPress={() => navigation.navigate('CreateEvent')}>
+          <Text style={styles.seeAll}>+ Add</Text>
+        </TouchableOpacity>
+      </View>
+
+      {eventsLoading ? (
+        <View style={styles.eventsLoading}>
+          <ActivityIndicator size="small" color={C.btnActive} />
+        </View>
+      ) : events.length === 0 ? (
+        <View style={styles.eventsEmpty}>
+          <Text style={styles.eventsEmptyTxt}>No events yet. Be the first to create one!</Text>
+          <TouchableOpacity
+            style={styles.eventsEmptyBtn}
+            onPress={() => navigation.navigate('CreateEvent')}>
+            <Text style={styles.eventsEmptyBtnTxt}>Create Event</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.eventsList}>
+          {events.map(ev => (
+            <EventCard
+              key={ev.id}
+              item={ev}
+              onPress={() => navigation.navigate('EventDetail', { event: ev })}
+            />
+          ))}
+        </ScrollView>
+      )}
+
+      <View style={[styles.sectionHeader, { marginTop: 8 }]}>
         <Text style={styles.sectionTitle}>Nearby Activities</Text>
         <TouchableOpacity><Text style={styles.seeAll}>See all</Text></TouchableOpacity>
       </View>
@@ -236,8 +331,33 @@ export default function HomeScreen({ navigation }: Props): React.JSX.Element {
   );
 }
 
-const sk = StyleSheet.create({
-  card: { flexDirection: 'row', backgroundColor: C.bgMuted, borderRadius: 16, padding: 16, marginBottom: 12, alignItems: 'center' },
+// ─── Event card styles ────────────────────────────────────────────────────────
+
+const evS = StyleSheet.create({
+  card: {
+    width: 170, backgroundColor: C.bgCard, borderRadius: 18,
+    padding: 14, marginRight: 12,
+    shadowColor: C.shadow, shadowOpacity: 0.1, shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 }, elevation: 2,
+  },
+  emojiBox: {
+    width: 48, height: 48, borderRadius: 14,
+    justifyContent: 'center', alignItems: 'center', marginBottom: 10,
+  },
+  emoji: { fontSize: 26 },
+  catPill: {
+    alignSelf: 'flex-start', borderRadius: 8,
+    paddingHorizontal: 8, paddingVertical: 3, marginBottom: 8,
+  },
+  catPillTxt: { fontSize: 10, fontWeight: '700' },
+  title: { fontSize: 13, fontWeight: '700', color: C.textPrimary, marginBottom: 8, lineHeight: 18 },
+  meta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 3 },
+  metaTxt: { fontSize: 11, color: C.textMuted, flex: 1 },
+  footer: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
+  goingTxt: { fontSize: 11, color: C.btnInactive, fontWeight: '600' },
+});
+
+const sk = StyleSheet.create({  card: { flexDirection: 'row', backgroundColor: C.bgMuted, borderRadius: 16, padding: 16, marginBottom: 12, alignItems: 'center' },
   circle: { width: 48, height: 48, borderRadius: 24, backgroundColor: C.border, marginRight: 12 },
   lines: { flex: 1, gap: 8 },
   line1: { height: 14, backgroundColor: C.border, borderRadius: 7, width: '70%' },
@@ -314,4 +434,12 @@ const styles = StyleSheet.create({
   emptyTitle: { fontSize: 18, fontWeight: '700', color: C.textPrimary, marginBottom: 8 },
   emptySub: { fontSize: 14, color: C.textMuted, textAlign: 'center' },
   joinError: { color: C.danger, fontSize: 13, paddingHorizontal: 20, paddingVertical: 12, textAlign: 'center' },
+
+  // Events section
+  eventsList: { paddingHorizontal: 20, paddingBottom: 8 },
+  eventsLoading: { height: 80, justifyContent: 'center', alignItems: 'center' },
+  eventsEmpty: { marginHorizontal: 20, backgroundColor: C.bgCard, borderRadius: 16, padding: 20, alignItems: 'center', marginBottom: 16, borderWidth: 1, borderColor: C.border },
+  eventsEmptyTxt: { fontSize: 13, color: C.textMuted, textAlign: 'center', marginBottom: 12 },
+  eventsEmptyBtn: { backgroundColor: C.bgMuted, borderRadius: 10, paddingHorizontal: 16, paddingVertical: 8 },
+  eventsEmptyBtnTxt: { fontSize: 13, color: C.btnActive, fontWeight: '600' },
 });

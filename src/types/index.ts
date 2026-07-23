@@ -71,12 +71,21 @@ export interface Activity {
 
 export interface Event {
   id: string;
-  emoji: string;
   title: string;
-  date: string;
+  date: string;           // ISO 8601 e.g. "2026-07-19T18:30:00.000Z"
   location: string;
   going: number;
+  // Fields that may be null from the API
+  emoji?: string | null;
   category?: EventCategory;
+  description?: string | null;
+  hostId?: string | null;
+  hostName?: string | null;
+  status?: 'upcoming' | 'completed' | 'cancelled';
+  createdAt?: string;
+  updatedAt?: string;
+  /** true when the current user has marked themselves as going (optimistic) */
+  isGoing?: boolean;
 }
 
 export interface Group {
