@@ -5,8 +5,8 @@ import ReactAppDependencyProvider
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
+    var launchOptions: [UIApplication.LaunchOptionsKey: Any]?
 
-  var window: UIWindow?
   var reactNativeDelegate: ReactNativeDelegate?
   var reactNativeFactory: RCTReactNativeFactory?
 
@@ -14,37 +14,43 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
   ) -> Bool {
-
     let delegate = ReactNativeDelegate()
     let factory = RCTReactNativeFactory(delegate: delegate)
-
     delegate.dependencyProvider = RCTAppDependencyProvider()
 
     reactNativeDelegate = delegate
     reactNativeFactory = factory
 
+    self.launchOptions = launchOptions
+
     return true
   }
+}
 
-  func application(
-    _ application: UIApplication,
-    configurationForConnecting connectingSceneSession: UISceneSession,
-    options: UIScene.ConnectionOptions
-  ) -> UISceneConfiguration {
+class SceneDelegate: UIResponder, UIWindowSceneDelegate {
+  var window: UIWindow?
 
-    let configuration = UISceneConfiguration(
-      name: "Default Configuration",
-      sessionRole: connectingSceneSession.role
+  func scene(
+    _ scene: UIScene,
+    willConnectTo session: UISceneSession,
+    options connectionOptions: UIScene.ConnectionOptions
+  ) {
+    guard let windowScene = scene as? UIWindowScene,
+          let appDelegate = UIApplication.shared.delegate as? AppDelegate,
+          let factory = appDelegate.reactNativeFactory else { return }
+
+    let window = UIWindow(windowScene: windowScene)
+    self.window = window
+
+    factory.startReactNative(
+      withModuleName: "NeighbourConnect",
+      in: window,
+      launchOptions: appDelegate.launchOptions
     )
-
-    configuration.delegateClass = SceneDelegate.self
-
-    return configuration
   }
 }
 
 class ReactNativeDelegate: RCTDefaultReactNativeFactoryDelegate {
-
   override func sourceURL(for bridge: RCTBridge) -> URL? {
     self.bundleURL()
   }
