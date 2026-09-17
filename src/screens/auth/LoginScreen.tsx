@@ -12,16 +12,20 @@ import { AuthStackParamList } from '../../types';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { LoginStyles as styles } from './LoginStyles';
+import { useBiometricAuth } from '../../hooks/useBiometricAuth';
+import { biometricStorage } from '../../services/secureStorage';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
 export default function LoginScreen({ navigation }: Props): React.JSX.Element {
   const dispatch = useDispatch();
-  const { loading, error } = useSelector((state: RootState) => state.auth);
+  const { loading, error, biometricEnrolled } = useSelector((state: RootState) => state.auth);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [secure, setSecure] = useState(true);
+
+  const { available, icon, label, authenticate } = useBiometricAuth();
 
   // Show API error as an alert
   useEffect(() => {
@@ -54,6 +58,23 @@ export default function LoginScreen({ navigation }: Props): React.JSX.Element {
 
     dispatch(loginRequest({ email: trimmedEmail, password: trimmedPassword }));
   };
+
+  const handleBiometricLogin = async (): Promise<void> => {
+    const result = await authenticate();
+    if (!result.success && result.error === 'User cancelled biometric prompt') return;
+    if (!result.success) {
+      Alert.alert('Authentication Failed', result.error ?? 'Biometric authentication failed.');
+      return;
+    }
+    const credentials = await biometricStorage.getCredentials();
+    if (!credentials) {
+      Alert.alert('Biometric Login', 'No saved credentials found. Please log in with your password.');
+      return;
+    }
+    dispatch(loginRequest({ email: credentials.email, password: credentials.password }));
+  };
+
+  const showBiometricButton = available && biometricEnrolled;
 
   return (
     <LinearGradient colors={['#004AC6', '#F8FAFF', '#FFFFFF']} style={styles.container}>
@@ -131,6 +152,18 @@ export default function LoginScreen({ navigation }: Props): React.JSX.Element {
             <Text style={styles.btnText}>Login</Text>
           )}
         </TouchableOpacity>
+
+        {/* Biometric Login Button */}
+        {showBiometricButton && (
+          <TouchableOpacity
+            style={[styles.biometricBtn, loading && { opacity: 0.7 }]}
+            onPress={handleBiometricLogin}
+            disabled={loading}
+            activeOpacity={0.8}>
+            <Icon name={icon} size={22} color="#2563EB" />
+            <Text style={styles.biometricBtnText}>Sign in with {label}</Text>
+          </TouchableOpacity>
+        )}
 
         <View style={styles.divider}>
           <View style={styles.line} />

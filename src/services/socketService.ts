@@ -9,7 +9,7 @@ import { ChatMessage } from '../types';
 
 // Socket server URL — must point to the same host as the REST API.
 // The socket server typically runs on the same origin without the /api path prefix.
-const SOCKET_URL = 'https://neighbourconnect-s2lb-production.up.railway.app';
+const SOCKET_URL = 'https://neighbourconnect-production.up.railway.app';
 
 type MessageListener = (message: ChatMessage) => void;
 type TypingListener = (data: { activityId: string; users: string[] }) => void;

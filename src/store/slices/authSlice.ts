@@ -19,6 +19,9 @@ interface AuthState {
   isFetchingStats: boolean;
   error: string | null;
   autoLoginChecked: boolean;
+  requiresBiometric: boolean;
+  biometricEnrolled: boolean;
+  backgroundedAt: number | null;
 }
 
 const initialState: AuthState = {
@@ -33,6 +36,9 @@ const initialState: AuthState = {
   isFetchingStats: false,
   error: null,
   autoLoginChecked: false,
+  requiresBiometric: false,
+  biometricEnrolled: false,
+  backgroundedAt: null,
 };
 
 const authSlice = createSlice({
@@ -57,7 +63,7 @@ const authSlice = createSlice({
     // ── Shared Login / SignUp Success ──────────────────────────────────────────
     loginSuccess: (
       state,
-      action: PayloadAction<{ user: User; token: string; refreshToken: string }>,
+      action: PayloadAction<{ user: User; token: string; refreshToken: string; biometricEnrolled?: boolean }>,
     ) => {
       state.user = action.payload.user;
       state.token = action.payload.token;
@@ -65,6 +71,9 @@ const authSlice = createSlice({
       state.loading = false;
       state.error = null;
       state.autoLoginChecked = true;
+      state.requiresBiometric = false;
+      state.biometricEnrolled = action.payload.biometricEnrolled ?? state.biometricEnrolled;
+      state.backgroundedAt = null;
     },
 
     // ── Shared Login / SignUp Failure ──────────────────────────────────────────
@@ -117,6 +126,23 @@ const authSlice = createSlice({
       state.refreshToken = null;
       state.isRefreshing = false;
       state.error = null;
+      state.requiresBiometric = false;
+      state.backgroundedAt = null;
+    },
+
+    // ── Biometric Lock ─────────────────────────────────────────────────────────
+    setBiometricEnrolled: (state, action: PayloadAction<boolean>) => {
+      state.biometricEnrolled = action.payload;
+    },
+    requireBiometricAuth: (state) => {
+      state.requiresBiometric = true;
+    },
+    biometricAuthSuccess: (state) => {
+      state.requiresBiometric = false;
+      state.backgroundedAt = null;
+    },
+    setBackgroundedAt: (state, action: PayloadAction<number | null>) => {
+      state.backgroundedAt = action.payload;
     },
 
     // ── Auto Login ─────────────────────────────────────────────────────────────
@@ -214,6 +240,10 @@ export const {
   checkAutoLogin,
   autoLoginCheckedDone,
   clearError,
+  setBiometricEnrolled,
+  requireBiometricAuth,
+  biometricAuthSuccess,
+  setBackgroundedAt,
 } = authSlice.actions;
 
 export default authSlice.reducer;

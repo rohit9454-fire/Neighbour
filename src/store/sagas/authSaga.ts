@@ -20,10 +20,13 @@ import {
   logout,
   checkAutoLogin,
   autoLoginCheckedDone,
+  requireBiometricAuth,
+  setBiometricEnrolled,
 } from '../slices/authSlice';
 import { authService, AuthResponse, AuthUser, UserStats, setAuthToken, clearAuthToken } from '../../services';
 import { UpdateProfilePayload } from '../../services/authService';
-import { secureStorage, userStorage } from '../../services/secureStorage';
+import { secureStorage, userStorage, biometricStorage } from '../../services/secureStorage';
+import { detectBiometricType } from '../../services/biometricTypeService';
 import { User } from '../../types';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -32,7 +35,6 @@ function sanitize(input: string): string {
   return input.replace(/[\r\n\t]/g, '').trim();
 }
 
-/** Map the API AuthUser shape → our Redux User shape. */
 function mapAuthUserToUser(authUser: AuthUser): User {
   return {
     id:        authUser.id,
@@ -46,24 +48,31 @@ function mapAuthUserToUser(authUser: AuthUser): User {
   };
 }
 
-/** Persist all auth values to secure storage. */
 function* persistAuthData(user: User, token: string, refreshToken: string) {
-  // User profile goes to AsyncStorage (non-sensitive)
   yield call([userStorage, userStorage.setUser], user as unknown as Record<string, unknown>);
-  // Tokens go to Keychain (encrypted)
   yield call([secureStorage, secureStorage.setTokens], token, refreshToken);
 }
 
-/** Clear all auth data from both secure storage and AsyncStorage. */
+// After a fresh credential login, enroll biometrics if available
+function* enrollBiometricsIfAvailable(email: string, password: string): Generator {
+  try {
+    const info: Awaited<ReturnType<typeof detectBiometricType>> =
+      yield call(detectBiometricType);
+    if (info.available) {
+      yield call([biometricStorage, biometricStorage.saveCredentials], email, password);
+      yield call([secureStorage, secureStorage.setBiometricEnrolled], true);
+      yield put(setBiometricEnrolled(true));
+    }
+  } catch {
+    // best-effort
+  }
+}
+
 function* clearAuthData() {
   yield call([userStorage, userStorage.clearUser]);
   yield call([secureStorage, secureStorage.clearTokens]);
 }
 
-/**
- * Calls GET /auth/me and dispatches fetchMeSuccess with the fresh profile.
- * Also overwrites the stored user so auto-login always restores the latest profile.
- */
 function* fetchAndStoreMe() {
   try {
     yield put(fetchMeRequest());
@@ -96,16 +105,11 @@ function* handleSignUp(action: ReturnType<typeof signUpRequest>) {
     yield* persistAuthData(user, response.token, response.refreshToken);
     setAuthToken(response.token);
 
-    yield put(loginSuccess({
-      user,
-      token:        response.token,
-      refreshToken: response.refreshToken,
-    }));
-
-    // Set Sentry user context so errors are tagged to the logged-in user
+    yield put(loginSuccess({ user, token: response.token, refreshToken: response.refreshToken }));
     setSentryUser(user.id ?? user.email, user.email);
-
     yield* fetchAndStoreMe();
+    // Enroll biometrics after signup (first install — credentials only for this session)
+    yield* enrollBiometricsIfAvailable(email, password);
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Sign up failed. Please try again.';
     captureError(error, { saga: 'handleSignUp' });
@@ -131,16 +135,11 @@ function* handleLogin(action: ReturnType<typeof loginRequest>) {
     yield* persistAuthData(user, response.token, response.refreshToken);
     setAuthToken(response.token);
 
-    yield put(loginSuccess({
-      user,
-      token:        response.token,
-      refreshToken: response.refreshToken,
-    }));
-
-    // Set Sentry user context
+    yield put(loginSuccess({ user, token: response.token, refreshToken: response.refreshToken }));
     setSentryUser(user.id ?? user.email, user.email);
-
     yield* fetchAndStoreMe();
+    // Enroll / refresh biometric credentials after every credential login
+    yield* enrollBiometricsIfAvailable(email, password);
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Login failed. Please try again.';
     captureError(error, { saga: 'handleLogin' });
@@ -167,32 +166,18 @@ function* handleFetchMe() {
 function* handleRefreshToken(action: ReturnType<typeof refreshTokenRequest>) {
   try {
     const currentRefreshToken = action.payload;
+    const response: AuthResponse = yield call(authService.refresh, { refreshToken: currentRefreshToken });
 
-    const response: AuthResponse = yield call(authService.refresh, {
-      refreshToken: currentRefreshToken,
-    });
-
-    const storedUser: Record<string, unknown> | null = yield call(
-      [userStorage, userStorage.getUser],
-    );
+    const storedUser: Record<string, unknown> | null = yield call([userStorage, userStorage.getUser]);
     const user: User = storedUser
       ? (storedUser as unknown as User)
       : mapAuthUserToUser(response.user);
 
-    // Update stored tokens securely
     yield call([secureStorage, secureStorage.setTokens], response.token, response.refreshToken);
     setAuthToken(response.token);
 
-    yield put(refreshTokenSuccess({
-      token:        response.token,
-      refreshToken: response.refreshToken,
-    }));
-
-    yield put(loginSuccess({
-      user,
-      token:        response.token,
-      refreshToken: response.refreshToken,
-    }));
+    yield put(refreshTokenSuccess({ token: response.token, refreshToken: response.refreshToken }));
+    yield put(loginSuccess({ user, token: response.token, refreshToken: response.refreshToken }));
   } catch {
     yield* clearAuthData();
     clearAuthToken();
@@ -204,22 +189,30 @@ function* handleRefreshToken(action: ReturnType<typeof refreshTokenRequest>) {
 
 function* handleAutoLogin() {
   try {
-    const storedUser: Record<string, unknown> | null = yield call(
-      [userStorage, userStorage.getUser],
-    );
+    const storedUser: Record<string, unknown> | null = yield call([userStorage, userStorage.getUser]);
     const storedTokens: { token: string; refreshToken: string } | null = yield call(
       [secureStorage, secureStorage.getTokens],
     );
 
     if (storedUser && storedTokens) {
       setAuthToken(storedTokens.token);
+
+      const biometricEnrolled: boolean = yield call(
+        [secureStorage, secureStorage.isBiometricEnrolled],
+      );
+
       yield put(loginSuccess({
-        user:         storedUser as unknown as User,
-        token:        storedTokens.token,
-        refreshToken: storedTokens.refreshToken,
+        user:             storedUser as unknown as User,
+        token:            storedTokens.token,
+        refreshToken:     storedTokens.refreshToken,
+        biometricEnrolled,
       }));
 
-      // Silently refresh profile in the background
+      // Require biometric re-auth on fresh launch only if enrolled
+      if (biometricEnrolled) {
+        yield put(requireBiometricAuth());
+      }
+
       yield* fetchAndStoreMe();
     } else {
       yield put(autoLoginCheckedDone());
@@ -261,6 +254,8 @@ function* handleLogout() {
     // Best-effort server logout — still clear local credentials
   } finally {
     yield* clearAuthData();
+    yield call([biometricStorage, biometricStorage.clearCredentials]);
+    yield call([secureStorage, secureStorage.setBiometricEnrolled], false);
     clearAuthToken();
     clearSentryUser();
   }
@@ -269,12 +264,12 @@ function* handleLogout() {
 // ─── Root Auth Saga ───────────────────────────────────────────────────────────
 
 export function* authSaga() {
-  yield takeLatest(signUpRequest.type,          handleSignUp);
-  yield takeLatest(loginRequest.type,           handleLogin);
-  yield takeLatest(fetchMeRequest.type,         handleFetchMe);
-  yield takeLatest(refreshTokenRequest.type,    handleRefreshToken);
-  yield takeLatest(checkAutoLogin.type,         handleAutoLogin);
-  yield takeLatest(updateProfileRequest.type,   handleUpdateProfile);
-  yield takeLatest(fetchStatsRequest.type,      handleFetchStats);
-  yield takeLatest(logout.type,                 handleLogout);
+  yield takeLatest(signUpRequest.type,        handleSignUp);
+  yield takeLatest(loginRequest.type,         handleLogin);
+  yield takeLatest(fetchMeRequest.type,       handleFetchMe);
+  yield takeLatest(refreshTokenRequest.type,  handleRefreshToken);
+  yield takeLatest(checkAutoLogin.type,       handleAutoLogin);
+  yield takeLatest(updateProfileRequest.type, handleUpdateProfile);
+  yield takeLatest(fetchStatsRequest.type,    handleFetchStats);
+  yield takeLatest(logout.type,               handleLogout);
 }

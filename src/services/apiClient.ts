@@ -10,7 +10,7 @@ import axios, {
 // source of truth. To use a different URL per environment, either:
 //   1. Use react-native-config and reference Config.API_BASE_URL, or
 //   2. Replace the string below per build variant.
-const BASE_URL = 'https://neighbourconnect-s2lb-production.up.railway.app';
+const BASE_URL = 'https://neighbourconnect-production.up.railway.app';
 
 const apiClient = axios.create({
   baseURL: BASE_URL,
@@ -163,7 +163,7 @@ apiClient.interceptors.response.use(
         refreshToken: storedRefreshToken,
       });
 
-      const newToken        = refreshResponse.token;
+      const newToken = refreshResponse.token;
       const newRefreshToken = refreshResponse.refreshToken;
 
       setAuthToken(newToken);

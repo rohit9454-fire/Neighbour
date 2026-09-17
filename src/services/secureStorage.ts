@@ -8,6 +8,7 @@ import * as Keychain from 'react-native-keychain';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const SERVICE_NAME = 'com.neighbourconnect';
+const BIOMETRIC_SERVICE = 'com.neighbourconnect.biometric';
 
 // ─── Storage Keys ─────────────────────────────────────────────────────────────
 
@@ -15,6 +16,7 @@ export const STORAGE_KEYS = {
   USER: '@neighbour_user',
   TOKEN: '@neighbour_token',
   REFRESH_TOKEN: '@neighbour_refresh_token',
+  BIOMETRIC_ENROLLED: '@neighbour_biometric_enrolled',
 } as const;
 
 // ─── Secure Token Storage (Keychain-backed) ──────────────────────────────────
@@ -90,8 +92,62 @@ export const secureStorage = {
     try {
       await AsyncStorage.removeItem(STORAGE_KEYS.TOKEN);
       await AsyncStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+      await AsyncStorage.removeItem(STORAGE_KEYS.BIOMETRIC_ENROLLED);
     } catch {
       // Ignore cleanup errors
+    }
+  },
+
+  async setBiometricEnrolled(value: boolean): Promise<void> {
+    await AsyncStorage.setItem(STORAGE_KEYS.BIOMETRIC_ENROLLED, value ? '1' : '0');
+  },
+
+  async isBiometricEnrolled(): Promise<boolean> {
+    const val = await AsyncStorage.getItem(STORAGE_KEYS.BIOMETRIC_ENROLLED);
+    return val === '1';
+  },
+};
+
+// ─── Biometric Credential Storage ────────────────────────────────────────────
+
+export const biometricStorage = {
+  async saveCredentials(email: string, password: string): Promise<boolean> {
+    try {
+      await Keychain.setGenericPassword(email, password, {
+        service: BIOMETRIC_SERVICE,
+        accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
+  // No access control here — caller must verify identity via simplePrompt first
+  async getCredentials(): Promise<{ email: string; password: string } | null> {
+    try {
+      const result = await Keychain.getGenericPassword({ service: BIOMETRIC_SERVICE });
+      if (result) return { email: result.username, password: result.password };
+      return null;
+    } catch {
+      return null;
+    }
+  },
+
+  async hasCredentials(): Promise<boolean> {
+    try {
+      const result = await Keychain.hasGenericPassword({ service: BIOMETRIC_SERVICE });
+      return result;
+    } catch {
+      return false;
+    }
+  },
+
+  async clearCredentials(): Promise<void> {
+    try {
+      await Keychain.resetGenericPassword({ service: BIOMETRIC_SERVICE });
+    } catch {
+      // ignore
     }
   },
 };

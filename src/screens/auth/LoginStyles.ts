@@ -140,4 +140,21 @@ export const LoginStyles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
   },
+  biometricBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    height: 56,
+    borderRadius: 18,
+    marginTop: 14,
+    borderWidth: 1.5,
+    borderColor: '#2563EB',
+    backgroundColor: '#EFF6FF',
+  },
+  biometricBtnText: {
+    color: '#2563EB',
+    fontWeight: '700',
+    fontSize: 16,
+  },
 });
